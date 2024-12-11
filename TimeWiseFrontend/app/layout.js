@@ -3,6 +3,17 @@ import SignUp from "@/components/SignUp";
 import "../styles/globals.css";
 import WelcomeMessage from "@/components/WelcomeMessage";
 import Task from "@/components/Task";
+import Progress from "@/components/Progress";
+import Performance from "@/components/Performance";
+import Notifications from "@/components/Notification";
+import Reminders from "@/components/Reminder";
+import Feedback from "@/components/Feedback";
+import Team from "@/components/Team";
+import Goal from "@/components/Goal";
+import Session from "@/components/Session";
+import SidebarLeft from "@/components/SidebarLeft";
+import SidebarRight from "@/components/SidebarRight";
+import Navbar from "@/components/Navbar";
 
 
 export const metadata = {
@@ -17,8 +28,20 @@ export default function RootLayout({ children }) {
       <body>
       {/* <WelcomeMessage /> */}
       {/* <SignUp/> */}
-      {/* <SignIn/> */}
+      {/* <SignIn/> 
       <Task/>
+      <Progress/>
+      <Performance/>
+      */}
+      {/* <Notifications/>
+      <Reminders/>
+      <Team/>
+      <Feedback/>
+      <Goal/>
+      <Session/> */}
+      <Navbar/>
+      <SidebarLeft/>
+      <SidebarRight/>
       </body>
     </html>
   );
