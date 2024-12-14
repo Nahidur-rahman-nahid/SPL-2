@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="603770cc-8cea-43bd-8a71-b97a6a7ea074" name="Changes" comment="Backend Code added for registration and login">
+      <change beforePath="$PROJECT_DIR$/../SPL2-Project-Proposal-Form.docx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../SRS_Of_Timewise.docx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/app/layout.js" beforeDir="false" afterPath="$PROJECT_DIR$/../TimeWiseFrontend/app/layout.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/app/signin/page.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/app/signup/page.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/app/welcome/page.js" beforeDir="false" afterPath="$PROJECT_DIR$/../TimeWiseFrontend/app/welcome/page.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/components/Navbar.js" beforeDir="false" afterPath="$PROJECT_DIR$/../TimeWiseFrontend/components/Navbar.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/components/SignIn.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/components/SignUp.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/components/WelcomeMessage.js" beforeDir="false" afterPath="$PROJECT_DIR$/../TimeWiseFrontend/components/WelcomeMessage.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/../TimeWiseFrontend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/../TimeWiseFrontend/package.json" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "Badhon1401"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/Badhon1401/SPL-2",
+    "accountId": "fe8de9da-e373-4d55-ad95-caecedac57b9"
+  }
+}]]></component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="mavenHomeTypeForPersistence" value="WRAPPER" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="QODANA_PROBLEMS_VIEW_TAB" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 0
+}</component>
+  <component name="ProjectId" id="2q6Er2h1D0qNaB62y7CmRlHZWpz" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.TimeWiseBackendApplication.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "v3",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "E:/spring6yt-main",
+    "project.structure.last.edited": "Artifacts",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "org.jetbrains.plugins.github.ui.GithubSettingsConfigurable"
+  }
+}]]></component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="TimeWiseBackend" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="TimeWiseBackend" />
+      <option name="filePath" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="603770cc-8cea-43bd-8a71-b97a6a7ea074" name="Changes" comment="" />
+      <created>1733974820883</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1733974820883</updated>
+    </task>
+    <task id="LOCAL-00001" summary="Backend Code added for registration and login">
+      <option name="closed" value="true" />
+      <created>1734092425452</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1734092425452</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Backend Code added for registration and login">
+      <option name="closed" value="true" />
+      <created>1734168234763</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1734168234763</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
+    <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Backend Code added for registration and login" />
+    <option name="LAST_COMMIT_MESSAGE" value="Backend Code added for registration and login" />
+  </component>
+</project>
