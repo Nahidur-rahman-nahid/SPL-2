@@ -5,18 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="603770cc-8cea-43bd-8a71-b97a6a7ea074" name="Changes" comment="Backend Code added for registration and login">
-      <change beforePath="$PROJECT_DIR$/../SPL2-Project-Proposal-Form.docx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../SRS_Of_Timewise.docx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/app/layout.js" beforeDir="false" afterPath="$PROJECT_DIR$/../TimeWiseFrontend/app/layout.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/app/signin/page.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/app/signup/page.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/app/welcome/page.js" beforeDir="false" afterPath="$PROJECT_DIR$/../TimeWiseFrontend/app/welcome/page.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/components/Navbar.js" beforeDir="false" afterPath="$PROJECT_DIR$/../TimeWiseFrontend/components/Navbar.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/components/SignIn.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/components/SignUp.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/components/WelcomeMessage.js" beforeDir="false" afterPath="$PROJECT_DIR$/../TimeWiseFrontend/components/WelcomeMessage.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/../TimeWiseFrontend/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../TimeWiseFrontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/../TimeWiseFrontend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,6 +13,11 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$/.." value="main" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
   <component name="GitHubPullRequestSearchHistory"><![CDATA[{
@@ -60,7 +54,7 @@
   "keyToString": {
     "Application.TimeWiseBackendApplication.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "v3",
+    "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "E:/spring6yt-main",
     "project.structure.last.edited": "Artifacts",
