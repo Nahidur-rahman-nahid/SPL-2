@@ -3,7 +3,7 @@ import fetch from 'node-fetch'; // Import fetch for making external requests
 // POST request handler for /api/login
 export async function POST(req) {
   try {
-    const { userName, password } = await req.json(); // Parse the incoming request body
+    const { userName, password } =  await req.json(); // Parse the incoming request body
 
     // Send a request to your backend for authentication
     const response = await fetch(`${process.env.BACKEND_SERVER_URL}/login`, {

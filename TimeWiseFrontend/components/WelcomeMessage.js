@@ -52,22 +52,22 @@ function WelcomeMessage() {
 
           {/* Navigation Buttons for Larger Screens */}
           <div className="hidden sm:flex space-x-3">
-            <Link href="/signin">
+            <Link href="/login">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="px-2 py-1 text-sm font-bold bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300"
               >
-                <FaSignInAlt className="inline mr-1" /> Sign In
+                <FaSignInAlt className="inline mr-1" /> Login
               </motion.button>
             </Link>
-            <Link href="/signup">
+            <Link href="/register">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="px-2 py-1 text-sm font-bold bg-gray-700 text-gray-100 rounded-md hover:bg-gray-600 transition duration-300"
               >
-                <FaUserPlus className="inline mr-1" /> Sign Up
+                <FaUserPlus className="inline mr-1" /> Register
               </motion.button>
             </Link>
             <Link href="/about-us">
@@ -86,12 +86,12 @@ function WelcomeMessage() {
         {/* Dropdown Menu for Small Screens */}
         {menuOpen && (
           <div className="sm:hidden bg-gray-800/90">
-            <Link href="/signin">
+            <Link href="/login">
               <button className="block w-full text-left px-4 py-2 text-sm text-gray-100 hover:bg-gray-700 transition duration-300">
                 <FaSignInAlt className="inline mr-2" /> Sign In
               </button>
             </Link>
-            <Link href="/signup">
+            <Link href="/register">
               <button className="block w-full text-left px-4 py-2 text-sm text-gray-100 hover:bg-gray-700 transition duration-300">
                 <FaUserPlus className="inline mr-2" /> Sign Up
               </button>

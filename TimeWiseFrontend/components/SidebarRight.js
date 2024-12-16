@@ -37,7 +37,7 @@ const SidebarRight = () => {
           Edit Profile
         </button>
         <button className="w-full bg-gray-500 text-white py-2 rounded-md hover:bg-gray-600 transition-colors duration-200">
-          Sign Out
+          Log Out
         </button>
 
         {/* Navigation Options */}
