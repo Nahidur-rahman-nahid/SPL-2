@@ -1,17 +1,18 @@
 package com.bsse1401_bsse1429.TimeWise.service;
 
+import com.bsse1401_bsse1429.TimeWise.model.User;
+import com.bsse1401_bsse1429.TimeWise.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,35 +20,41 @@ import java.util.function.Function;
 
 @Service
 public class JWTService {
+    @Autowired
+    UserRepository userRepo;
 
-    private String secretkey = "";
-    private long tokenExpiration = 1814400000; // 21 days
+    @Value("${jwt.secret-key}")
+    private String secretKey; // Injects the secret key from application.properties
 
-    public JWTService() {
-        try {
-            KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA256");
-            SecretKey sk = keyGen.generateKey();
-            secretkey = Base64.getEncoder().encodeToString(sk.getEncoded());
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    @Value("${jwt.token-expiration}")
+    private long tokenExpiration; // Injects the token expiration time from application.properties
 
     // Generate JWT token using ObjectId (converted to String)
     public String generateToken(ObjectId userId) {
-        Map<String, Object> claims = new HashMap<>();
-        return Jwts.builder()
-                .claims(claims)
-                .subject(userId.toHexString())  // Convert ObjectId to String
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + tokenExpiration))
-                .signWith(getKey())
-                .compact();
+        try {
+            // Log the user ID and expiration for debugging
+            System.out.println("Generating token for userId: " + userId.toHexString());
+            System.out.println("Token expiration: " + tokenExpiration);
+
+            Map<String, Object> claims = new HashMap<>();
+            return Jwts.builder()
+                    .setClaims(claims)
+                    .setSubject(userId.toHexString())  // Convert ObjectId to String
+                    .setIssuedAt(new Date(System.currentTimeMillis()))
+                    .setExpiration(new Date(System.currentTimeMillis() + tokenExpiration))
+                    .signWith(getKey())
+                    .compact();
+        } catch (Exception e) {
+            // Log the error to understand what went wrong
+            e.printStackTrace();
+            throw new RuntimeException("Error generating JWT token", e);
+        }
     }
 
+
     private SecretKey getKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretkey);
-        return Keys.hmacShaKeyFor(keyBytes);
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey); // Decode the secret key from BASE64
+        return Keys.hmacShaKeyFor(keyBytes); // Generate SecretKey from the decoded byte array
     }
 
     // Extract userId from the token (convert the String back to ObjectId)
@@ -71,7 +78,14 @@ public class JWTService {
     // Validate token and match with UserDetails (comparing ObjectId)
     public boolean validateToken(String token, UserDetails userDetails) {
         final ObjectId userId = extractUserId(token);
-        return (userId.equals(new ObjectId(userDetails.getUsername())) && !isTokenExpired(token));
+        User user = userRepo.findByUserId(userId);
+        if (user == null) {
+            throw new RuntimeException("User not found with userId: " + userId.toHexString());
+        }
+        System.out.println("User found: " + user.getUserName());
+
+        return (user.getUserId().equals(userId) && !isTokenExpired(token));
+
     }
 
     private boolean isTokenExpired(String token) {
@@ -80,5 +94,15 @@ public class JWTService {
 
     private Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
+    }
+
+    // Verify token
+    public boolean verifyToken(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            return claims.getExpiration().after(new Date()); // Check if token is not expired
+        } catch (Exception e) {
+            return false; // Token is invalid
+        }
     }
 }

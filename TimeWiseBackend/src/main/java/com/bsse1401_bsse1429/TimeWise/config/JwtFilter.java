@@ -1,5 +1,7 @@
 package com.bsse1401_bsse1429.TimeWise.config;
 
+import com.bsse1401_bsse1429.TimeWise.model.User;
+import com.bsse1401_bsse1429.TimeWise.repository.UserRepository;
 import com.bsse1401_bsse1429.TimeWise.service.JWTService;
 import com.bsse1401_bsse1429.TimeWise.service.MyUserDetailsService;
 import jakarta.servlet.FilterChain;
@@ -8,7 +10,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,10 +23,12 @@ import java.io.IOException;
 public class JwtFilter extends OncePerRequestFilter {
 
     @Autowired
+    UserRepository userRepo;
+    @Autowired
     private JWTService jwtService;
 
     @Autowired
-    ApplicationContext context;
+    private MyUserDetailsService myUserDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -35,11 +38,17 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
-            userId = jwtService.extractUserId(token); // Extract user ID from the token
+            try {
+                userId = jwtService.extractUserId(token); // Extract user ID from the token
+            } catch (Exception e) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Invalid or expired JWT token");
+                return;
+            }
         }
-
+        User user=userRepo.findByUserId(userId);
         if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = context.getBean(MyUserDetailsService.class).loadUserByUsername(String.valueOf(userId));
+            UserDetails userDetails = myUserDetailsService.loadUserByUsername(user.getUserName());
             if (jwtService.validateToken(token, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

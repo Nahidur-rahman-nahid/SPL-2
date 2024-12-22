@@ -5,7 +5,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="603770cc-8cea-43bd-8a71-b97a6a7ea074" name="Changes" comment="All good">
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/repository/UserRepository.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/config/JwtFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/config/JwtFilter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/controller/UserController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/model/UserPrincipal.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/model/UserPrincipal.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/model/Users.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/model/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/repo/UserRepo.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/service/JWTService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/service/JWTService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/service/MyUserDetailsService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/service/MyUserDetailsService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/service/UserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -18,6 +30,14 @@
       <option value="module" />
     </option>
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Interface" />
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
@@ -26,18 +46,18 @@
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "Badhon1401"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Badhon1401&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/Badhon1401/SPL-2",
-    "accountId": "fe8de9da-e373-4d55-ad95-caecedac57b9"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Badhon1401/SPL-2.git&quot;,
+    &quot;accountId&quot;: &quot;fe8de9da-e373-4d55-ad95-caecedac57b9&quot;
   }
-}]]></component>
+}</component>
   <component name="MavenImportPreferences">
     <option name="generalSettings">
       <MavenGeneralSettings>
@@ -52,6 +72,9 @@
   &quot;associatedIndex&quot;: 0
 }</component>
   <component name="ProjectId" id="2q6Er2h1D0qNaB62y7CmRlHZWpz" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -59,6 +82,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "Application.TimeWiseBackendApplication.executor": "Run",
+    "JUnit.TimeWiseBackendApplicationTests.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
@@ -151,5 +175,16 @@
     <MESSAGE value="Backend Code added for registration and login" />
     <MESSAGE value="All good" />
     <option name="LAST_COMMIT_MESSAGE" value="All good" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/model/Goal.java</url>
+          <line>12</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
