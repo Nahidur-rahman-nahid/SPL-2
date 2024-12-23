@@ -1,0 +1,8 @@
+src/main/resources
+target
+test
+pom.xml
+mvnw
+mvnw.cmd
+.gitignore
+.idea
