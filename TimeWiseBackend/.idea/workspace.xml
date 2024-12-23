@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="603770cc-8cea-43bd-8a71-b97a6a7ea074" name="Changes" comment="All good" />
+    <list default="true" id="603770cc-8cea-43bd-8a71-b97a6a7ea074" name="Changes" comment="All good">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -52,7 +54,7 @@
     </option>
   </component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="CurrentFile" />
+    <option name="selectedTabId" value="ProjectErrors" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0
@@ -87,6 +89,18 @@
     </key>
   </component>
   <component name="RunManager">
+    <configuration name="TimeWiseBackendApplication" type="Application" factoryName="Application" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.bsse1401_bsse1429.TimeWise.TimeWiseBackendApplication" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.bsse1401_bsse1429.TimeWise.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration default="true" type="JetRunConfigurationType">
       <module name="TimeWiseBackend" />
       <method v="2">
@@ -214,7 +228,15 @@
       <option name="project" value="LOCAL" />
       <updated>1734962353103</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="All good">
+      <option name="closed" value="true" />
+      <created>1734962456374</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1734962456374</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
