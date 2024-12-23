@@ -1,0 +1,17 @@
+Index: src/main/resources/application.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>spring.application.name=TimeWiseBackend\r\nserver.port=8081\r\nspring.data.mongodb.database=timewise\r\nspring.data.mongodb.uri=mongodb+srv://bsse1401:853571@cluster0.xrvur.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0\r\nlogging.level.org.springframework=DEBUG\r\nlogging.level.com.bsse1401_bsse1429=DEBUG\r\nlogging.level.org.springframework.data.mongodb=DEBUG\r\n\r\n# JWT configurations\r\njwt.secret-key=timewisespl2projectbybsse1401andbsse1429timewisespl2projectbybsse1401andbsse1429\r\njwt.token-expiration=1814400000\r\n\r\n
+===================================================================
+diff --git a/src/main/resources/application.properties b/src/main/resources/application.properties
+--- a/src/main/resources/application.properties	(revision 92d96774857ed7caa3f7af8461db679fcf415ec4)
++++ b/src/main/resources/application.properties	(date 1734949760230)
+@@ -1,7 +1,7 @@
+ spring.application.name=TimeWiseBackend
+ server.port=8081
+ spring.data.mongodb.database=timewise
+-spring.data.mongodb.uri=mongodb+srv://bsse1401:853571@cluster0.xrvur.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
++spring.data.mongodb.uri=mongodb+srv://bsse1401:742460@cluster0.xrvur.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+ logging.level.org.springframework=DEBUG
+ logging.level.com.bsse1401_bsse1429=DEBUG
+ logging.level.org.springframework.data.mongodb=DEBUG

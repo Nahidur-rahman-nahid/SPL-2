@@ -4,15 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="603770cc-8cea-43bd-8a71-b97a6a7ea074" name="Changes" comment="All good">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/controller/TaskController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/controller/TaskController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/repository/TaskRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/repository/TaskRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/service/TaskService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/service/TaskService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/bsse1401_bsse1429/TimeWise/controller/TaskController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/bsse1401_bsse1429/TimeWise/controller/TaskController.class" afterDir="false" />
-    </list>
+    <list default="true" id="603770cc-8cea-43bd-8a71-b97a6a7ea074" name="Changes" comment="All good" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
