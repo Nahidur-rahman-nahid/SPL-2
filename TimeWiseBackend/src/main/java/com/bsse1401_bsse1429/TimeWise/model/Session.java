@@ -8,6 +8,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
+import java.util.List;
 
 @Document
 @Data
@@ -16,9 +17,10 @@ import java.util.Date;
 class Session {
     @Id
     private ObjectId sessionId;
-    private ObjectId userId;
+    private String userName;
     private Date sessionStartTime;
     private Date sessionEndTime;
     private Double duration;
-    private String activitySummary;
+    private String sessionSummary;
+    private List<ObjectId> tasksOperated;
 }

@@ -16,7 +16,7 @@ import java.util.Date;
 class Notification {
     @Id
     private ObjectId notificationId;
-    private ObjectId userId;
+    private String userName;
     private String notificationType;
     private String notificationMessage;
     private String notificationStatus;

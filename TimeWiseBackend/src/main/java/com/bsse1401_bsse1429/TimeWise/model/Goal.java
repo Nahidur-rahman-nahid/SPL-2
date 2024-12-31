@@ -16,12 +16,9 @@ import java.util.List;
 @AllArgsConstructor
 public class Goal {
     @Id
-    private ObjectId goalId; // Unique Goal ID
-
-    private ObjectId userId; // User ID associated with the goal
-
-    private String goalName; // Goal Name or Title
-
+    private ObjectId goalId;
+    private String userName;
+    private String goalName;
     private String goalCategory; // e.g., Fitness, Education, Career, etc.
 
     private String goalDescription; // Detailed description of the goal
@@ -29,42 +26,42 @@ public class Goal {
     private Date goalDeadline; // Deadline for goal completion
 
     private Date goalCreationDate; // When the goal was created
-
+    private List<Note> goalNotes;
     private String goalCompletionStatus; // "In Progress", "Completed", etc.
-
+    private String goalVisibilityStatus; // public or private
     private List<Comment> goalComments; // Comments on the goal
 
-    private List<Task> goalTasks; // Tasks that are part of this goal
+    private List<ObjectId> goalTasks; // Tasks that are part of this goal
 
-    private Integer goalProgress; // Overall progress percentage (0-100)
+    private Double goalProgress; // Overall progress percentage (0-100)
 
     // Method to calculate and update goal progress based on tasks
-    public void updateGoalProgress() {
-        if (goalTasks == null || goalTasks.isEmpty()) {
-            this.goalProgress = 0;
-            this.goalCompletionStatus = "Not Started";
-            return;
-        }
-
-        int totalProgress = 0;
-        int completedTasks = 0;
-
-        for (Task task : goalTasks) {
-            totalProgress += task.getTaskCurrentProgress();
-            if (task.getTaskCurrentProgress() == 100) {
-                completedTasks++;
-            }
-        }
-
-        this.goalProgress = totalProgress / goalTasks.size();
-
-        // Update completion status
-        if (completedTasks == goalTasks.size()) {
-            this.goalCompletionStatus = "Completed";
-        } else {
-            this.goalCompletionStatus = "In Progress";
-        }
-    }
+//    public void updateGoalProgress() {
+//        if (goalTasks == null || goalTasks.isEmpty()) {
+//            this.goalProgress = 0;
+//            this.goalCompletionStatus = "Not Started";
+//            return;
+//        }
+//
+//        int totalProgress = 0;
+//        int completedTasks = 0;
+//
+//        for (Task task : goalTasks) {
+//            totalProgress += task.getTaskCurrentProgress();
+//            if (task.getTaskCurrentProgress() == 100) {
+//                completedTasks++;
+//            }
+//        }
+//
+//        this.goalProgress = totalProgress / goalTasks.size();
+//
+//        // Update completion status
+//        if (completedTasks == goalTasks.size()) {
+//            this.goalCompletionStatus = "Completed";
+//        } else {
+//            this.goalCompletionStatus = "In Progress";
+//        }
+//    }
 
     // Method to add a comment to the goal
     public void addGoalComment(String username, String commentText) {
@@ -83,4 +80,13 @@ public class Goal {
         private String username; // User who added the comment
         private String commentText; // The comment content
     }
+    // Inner class for Notes
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Note {
+        private Date timestamp;
+        private String noteText;
+    }
+
 }

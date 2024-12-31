@@ -5,9 +5,9 @@ import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.Date;
-import java.util.List;
-import java.util.TreeMap;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @Document
 @Data
@@ -24,6 +24,7 @@ public class Task {
     private String taskDescription; // Description (limit enforced at frontend)
 
     private String taskPriority; // Options: Low, Medium, High
+    private String taskVisibilityStatus; // public or private
 
     private Date taskCreationDate; // Date when the task is created
 
@@ -37,47 +38,112 @@ public class Task {
     private List<Comment> taskComments;
 
     // Notes per participant - List of Note objects (for timestamping)
-    private List<Note> taskNotes;
+    private TreeMap<String, List<Note>> taskNotes = new TreeMap<>();
 
     // Progress tracking - Current progress percentage (0 to 100)
-    private Integer taskCurrentProgress;
-
-    // Progress history - Ordered: Date | Updated By | Old Progress | New Progress
-    private TreeMap<Date, ProgressChange> taskProgressHistory;
+    private Integer taskCurrentProgress = 0;
 
     // Modification history - Date | Field Name | Updated By | New Value
-    private TreeMap<Date, TaskModification> taskModificationHistory;
+    private List<TaskModification> taskModificationHistory;
 
-    // Method to update progress with validation
-    public void updateTaskProgress(String updatedBy, int newProgress) {
-        if (newProgress < 0 || newProgress > 100) {
-            throw new IllegalArgumentException("Progress must be between 0 and 100.");
-        }
-        int oldProgress = this.taskCurrentProgress;
-        this.taskCurrentProgress = newProgress;
-
-        // Record progress history
-        ProgressChange progressChange = new ProgressChange(updatedBy, oldProgress, newProgress);
-        this.taskProgressHistory.put(new Date(), progressChange);
+    // Method to update progress with validation, now using modifyTaskAttribute
+    public void updateTaskProgress(String updatedBy, Object newProgress) {
+        this.modifyTaskAttribute("taskCurrentProgress", updatedBy, newProgress);
     }
 
     // Method to add a comment
-    public void addTaskComment(String username, String commentText) {
-        Comment comment = new Comment(new Date(), username, commentText);
+    public void addTaskComment(String userName, String commentText) {
+        Comment comment = new Comment(new Date(), userName, commentText);
         this.taskComments.add(comment);
     }
 
     // Method to add a note
-    public void addTaskNote(String username, String noteText) {
-        Note note = new Note(new Date(), username, noteText);
-        this.taskNotes.add(note);
+    public void addTaskNote(String userName, String noteText) {
+        Note note = new Note(new Date(), noteText);
+        this.taskNotes.computeIfAbsent(userName, k -> new ArrayList<>()).add(note);
     }
 
-    // Modify a task attribute and log changes
-    public void modifyTaskAttribute(String fieldName, String updatedBy, String newValue) {
-        TaskModification modification = new TaskModification(fieldName, updatedBy, newValue);
-        this.taskModificationHistory.put(new Date(), modification);
+    public void modifyTaskAttribute(String fieldName, String updatedBy, Object newValue) {
+        if (fieldName == null || updatedBy == null || newValue == null) {
+            throw new IllegalArgumentException("Field name, updatedBy, and newValue cannot be null.");
+        }
+
+        Object previousValue;
+        switch (fieldName) {
+            case "taskCurrentProgress":
+                if (newValue instanceof String) {
+                    try {
+                        // Try to parse the string to an integer
+                        int progress = Integer.parseInt((String) newValue);
+                        if (progress < 0 || progress > 100) {
+                            throw new IllegalArgumentException("taskCurrentProgress must be an Integer between 0 and 100.");
+                        }
+                        previousValue = this.taskCurrentProgress;
+                        this.taskCurrentProgress = progress;
+                    } catch (NumberFormatException e) {
+                        throw new IllegalArgumentException("taskCurrentProgress must be a valid integer.");
+                    }
+                } else if (newValue instanceof Integer) {
+                    int progress = (Integer) newValue;
+                    if (progress < 0 || progress > 100) {
+                        throw new IllegalArgumentException("taskCurrentProgress must be an Integer between 0 and 100.");
+                    }
+                    previousValue = this.taskCurrentProgress;
+                    this.taskCurrentProgress = progress;
+                } else {
+                    throw new IllegalArgumentException("taskCurrentProgress must be a valid integer or string representing an integer.");
+                }
+                break;
+            case "taskName":
+                previousValue = this.taskName;
+                this.taskName = (String) newValue;
+                break;
+            case "taskCategory":
+                previousValue = this.taskCategory;
+                this.taskCategory = (String) newValue;
+                break;
+            case "taskDescription":
+                previousValue = this.taskDescription;
+                this.taskDescription = (String) newValue;
+                break;
+            case "taskPriority":
+                previousValue = this.taskPriority;
+                this.taskPriority = (String) newValue;
+                break;
+            case "taskVisibilityStatus":
+                previousValue = this.taskVisibilityStatus;
+                this.taskVisibilityStatus = (String) newValue;
+                break;
+            case "taskDeadline":
+                if (newValue instanceof String) {
+                    try {
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+                        previousValue = this.taskDeadline;
+                        this.taskDeadline = dateFormat.parse((String) newValue); // Convert string to Date
+                    } catch (ParseException e) {
+                        throw new IllegalArgumentException("taskDeadline must be a valid date string.");
+                    }
+                } else if (newValue instanceof Date) {
+                    previousValue = this.taskDeadline;
+                    this.taskDeadline = (Date) newValue; // Already a Date, no conversion needed
+                } else {
+                    throw new IllegalArgumentException("taskDeadline must be a Date or a valid date string.");
+                }
+                break;
+            case "taskOwner":
+                previousValue = this.taskOwner;
+                this.taskOwner = (String) newValue;
+                break;
+            default:
+                throw new IllegalArgumentException("Field name not recognized for modification.");
+        }
+
+        // Log the modification
+        TaskModification modification = new TaskModification(new Date(), fieldName, updatedBy, previousValue, this.taskCurrentProgress);
+        this.taskModificationHistory.add(modification);
     }
+
+
 
     // Inner class for Comments
     @Data
@@ -85,7 +151,7 @@ public class Task {
     @AllArgsConstructor
     public static class Comment {
         private Date timestamp;
-        private String username;
+        private String userName;
         private String commentText;
     }
 
@@ -95,18 +161,7 @@ public class Task {
     @AllArgsConstructor
     public static class Note {
         private Date timestamp;
-        private String username;
         private String noteText;
-    }
-
-    // Inner class for Progress Changes
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ProgressChange {
-        private String updatedBy;
-        private Integer oldProgress;
-        private Integer newProgress;
     }
 
     // Inner class for Task Modifications
@@ -114,9 +169,10 @@ public class Task {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TaskModification {
+        private Date timestamp;
         private String fieldName;
         private String updatedBy;
-        private String newValue;
+        private Object previousValue;
+        private Object newValue;
     }
 }
-

@@ -19,8 +19,8 @@ class Team {
     @Id
     private ObjectId teamId;
     private String teamName;
-    private List<ObjectId> teamMembers;
-    private ObjectId createdBy;
+    private List<String> teamMembers;
+    private String teamOwner;
     private Date creationDate;
     private String teamStatus;
 }
