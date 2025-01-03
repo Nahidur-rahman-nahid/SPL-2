@@ -3,6 +3,7 @@ package com.bsse1401_bsse1429.TimeWise.controller;
 import com.bsse1401_bsse1429.TimeWise.model.Task;
 import com.bsse1401_bsse1429.TimeWise.utils.AddTaskCommentRequestBody;
 import com.bsse1401_bsse1429.TimeWise.utils.AddTaskNoteRequestBody;
+import com.bsse1401_bsse1429.TimeWise.utils.GenerateTaskRequestBody;
 import com.bsse1401_bsse1429.TimeWise.utils.TaskModificationRequestBody;
 import com.bsse1401_bsse1429.TimeWise.service.TaskService;
 import org.bson.types.ObjectId;
@@ -24,6 +25,12 @@ public class TaskController {
         Task createdTask = taskService.createTask(task, userName);
         return ResponseEntity.ok(createdTask);
     }
+    // Create Task
+//    @PostMapping("/generateTask")
+//    public ResponseEntity<Task> generateTask(@RequestBody GenerateTaskRequestBody task, @RequestParam String userName) {
+//        Task createdTask = taskService.generateTask(task, userName);
+//        return ResponseEntity.ok(createdTask);
+//    }
 
     // Get all tasks of a User
     @GetMapping("/allTasks")

@@ -2,6 +2,7 @@ package com.bsse1401_bsse1429.TimeWise.service;
 
 import com.bsse1401_bsse1429.TimeWise.model.Task;
 import com.bsse1401_bsse1429.TimeWise.repository.TaskRepository;
+import com.bsse1401_bsse1429.TimeWise.utils.GenerateTaskRequestBody;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -71,9 +72,17 @@ public class TaskService {
         if (task.getTaskModificationHistory() == null) {
             task.setTaskModificationHistory(new ArrayList<>());
         }
+        if (task.getSubTasks() == null) {
+            task.setSubTasks(new ArrayList<>());
+        }
 
         return taskRepository.save(task);
     }
+
+    // Generate a task using AI
+//    public Task generateTask(GenerateTaskRequestBody task, String userName) {
+//
+//    }
 
     // Add a comment to a task
     public Task addTaskComment(ObjectId taskId, String userName, String commentText) {
@@ -199,4 +208,6 @@ public class TaskService {
         tasks.sort(Comparator.comparingInt(Task::getTaskCurrentProgress)); // Ascending order (lowest progress first)
         return tasks;
     }
+
+
 }
