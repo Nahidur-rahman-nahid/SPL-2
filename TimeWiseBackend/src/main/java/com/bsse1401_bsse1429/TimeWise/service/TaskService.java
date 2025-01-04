@@ -28,7 +28,7 @@ public class TaskService {
         task.setTaskOwner(userName);
 
         if (task.getTaskParticipants() == null) {
-            task.setTaskParticipants(new ArrayList<>());
+            task.setTaskParticipants(new HashSet<>());
         }
         if (!task.getTaskParticipants().contains(userName)) {
             task.getTaskParticipants().add(userName);
@@ -60,6 +60,9 @@ public class TaskService {
         if (task.getTaskVisibilityStatus() == null || task.getTaskVisibilityStatus().isEmpty()) {
             task.setTaskVisibilityStatus("Private");
         }
+        if (task.getTaskGoal() == null || task.getTaskGoal().isEmpty()) {
+            task.setTaskGoal("General");
+        }
         if (task.getTaskComments() == null) {
             task.setTaskComments(new ArrayList<>());
         }
@@ -71,9 +74,6 @@ public class TaskService {
         }
         if (task.getTaskModificationHistory() == null) {
             task.setTaskModificationHistory(new ArrayList<>());
-        }
-        if (task.getSubTasks() == null) {
-            task.setSubTasks(new ArrayList<>());
         }
 
         return taskRepository.save(task);

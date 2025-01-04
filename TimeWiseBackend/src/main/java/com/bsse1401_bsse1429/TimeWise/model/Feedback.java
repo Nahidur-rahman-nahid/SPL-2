@@ -13,12 +13,12 @@ import java.util.Date;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-class Feedback {
+class Message {
     @Id
-    private ObjectId feedbackId;
+    private ObjectId messageId;
     private String from;
     private String to;
     private String feedbackMessage;
-    private Double feedbackPoints;
+    private String feedbackPoints;
     private Date timestamp;
 }

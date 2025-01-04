@@ -15,21 +15,21 @@ import java.util.*;
 @AllArgsConstructor
 public class Task {
     @Id
-    private ObjectId taskId; // Unique Task ID
-    private String taskName; // Task name (may not be unique)
-    private String taskCategory; // e.g., "event organizing", "leisure", etc.
-    private String taskDescription; // Description (limit enforced at frontend)
-    private String taskPriority; // Options: Low, Medium, High
-    private String taskVisibilityStatus; // public or private
-    private Date taskCreationDate; // Date when the task is created
-    private Date taskDeadline; // Deadline for task completion
-    private String taskOwner; // Task creator/owner's name
-    private List<String> taskParticipants; // List of participants' names
+    private ObjectId taskId;
+    private String taskName;
+    private String taskCategory;
+    private String taskDescription;
+    private String taskPriority;
+    private String taskVisibilityStatus;
+    private Date taskCreationDate;
+    private Date taskDeadline;
+    private String taskOwner;
+    private String taskGoal;
+    private Set<String> taskParticipants;
     private List<Comment> taskComments;
     private TreeMap<String, List<Note>> taskNotes;
-    private Integer taskCurrentProgress = 0;
+    private Integer taskCurrentProgress;
     private List<TaskModification> taskModificationHistory;
-    private List<Task> subTasks;
 
     // Method to update progress with validation, now using modifyTaskAttribute
     public void updateTaskProgress(String updatedBy, Object newProgress) {
@@ -99,6 +99,10 @@ public class Task {
                 previousValue = this.taskVisibilityStatus;
                 this.taskVisibilityStatus = (String) newValue;
                 break;
+            case "taskGoal":
+                previousValue = this.taskGoal;
+                this.taskGoal = (String) newValue;
+                break;
             case "taskDeadline":
                 if (newValue instanceof String) {
                     try {
@@ -160,4 +164,5 @@ public class Task {
         private Object previousValue;
         private Object newValue;
     }
+
 }

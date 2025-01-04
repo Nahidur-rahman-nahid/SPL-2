@@ -13,12 +13,13 @@ import java.util.Date;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-class Notification {
-    @Id
-    private ObjectId notificationId;
-    private String userName;
-    private String notificationType;
+public class Notification {
+//    @Id
+//    private ObjectId notificationId;
+    private String sender;
+    private String recipient;
+    private String notificationSubject; // team invitation, task update, system related infos
     private String notificationMessage;
-    private String notificationStatus;
+    private String notificationStatus; // seen, unseen
     private Date timestamp;
 }
