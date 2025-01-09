@@ -2,10 +2,11 @@ package com.bsse1401_bsse1429.TimeWise.service;
 
 import com.bsse1401_bsse1429.TimeWise.model.Task;
 import com.bsse1401_bsse1429.TimeWise.repository.TaskRepository;
-import com.bsse1401_bsse1429.TimeWise.utils.GenerateTaskRequestBody;
+import com.bsse1401_bsse1429.TimeWise.utils.UserCredentials;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.web.webauthn.management.UserCredentialRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -23,16 +24,16 @@ public class TaskService {
     private JWTService jwtService;
 
     // Create a new task
-    public Task createTask(Task task, String userName) {
+    public Task createTask(Task task) {
+
+        String userName=UserCredentials.getCurrentUsername();
 
         task.setTaskOwner(userName);
 
         if (task.getTaskParticipants() == null) {
             task.setTaskParticipants(new HashSet<>());
         }
-        if (!task.getTaskParticipants().contains(userName)) {
-            task.getTaskParticipants().add(userName);
-        }
+        task.getTaskParticipants().add(userName);
 
         if (task.getTaskCreationDate() == null) {
             task.setTaskCreationDate(new Date());
@@ -85,7 +86,8 @@ public class TaskService {
 //    }
 
     // Add a comment to a task
-    public Task addTaskComment(ObjectId taskId, String userName, String commentText) {
+    public Task addTaskComment(ObjectId taskId, String commentText) {
+        String  userName=UserCredentials.getCurrentUsername();
         Task task = getTaskById(taskId);
         if(task.getTaskParticipants().contains(userName)) {
             task.addTaskComment(userName, commentText);
@@ -96,7 +98,8 @@ public class TaskService {
         }
     }
     // Add a Note to a task
-    public Task addTaskNote(ObjectId taskId, String userName, String noteText) {
+    public Task addTaskNote(ObjectId taskId, String noteText) {
+        String  userName=UserCredentials.getCurrentUsername();
         Task task = getTaskById(taskId);
         if(task.getTaskParticipants().contains(userName)) {
             task.addTaskNote(userName, noteText);
@@ -107,7 +110,8 @@ public class TaskService {
         }
     }
     // Modify a task attribute
-    public Task modifyTaskAttribute(ObjectId taskId, String fieldName, String updatedBy, Object newValue) {
+    public Task modifyTaskAttribute(ObjectId taskId, String fieldName, Object newValue) {
+        String updatedBy =UserCredentials.getCurrentUsername();
         Task task = getTaskById(taskId);
         if(fieldName.equals("taskCurrentProgress") && task.getTaskParticipants().contains(updatedBy)){
             task.updateTaskProgress(updatedBy,newValue);
@@ -124,7 +128,8 @@ public class TaskService {
     }
 
     // Delete a task by ID
-    public void deleteTask(ObjectId taskId, String userName) {
+    public void deleteTask(ObjectId taskId) {
+        String  userName=UserCredentials.getCurrentUsername();
         Task task = getTaskById(taskId);
         if (task == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found with ID: " + taskId);
@@ -135,7 +140,7 @@ public class TaskService {
     }
 
     // Get a task by ID
-    public Task getTaskById(ObjectId taskId) {
+    private Task getTaskById(ObjectId taskId) {
         Optional<Task> taskOptional = taskRepository.findById(taskId);
         if (taskOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found with ID: " + taskId);
@@ -144,7 +149,8 @@ public class TaskService {
     }
 
     // Get all tasks of a User
-    public List<Task> getAllTasksOfAnUser(String userName) {
+    public List<Task> getAllTasksOfAnUser() {
+        String  userName = UserCredentials.getCurrentUsername();
         List<Task> tasks = taskRepository.findByTaskParticipantsContains(userName);
 
         tasks.sort((t1, t2) -> {
@@ -159,25 +165,30 @@ public class TaskService {
     private double calculateTaskRank(Task task) {
         // Priority contributes 40%
         double priorityWeight = 0.4;
-        int priorityValue = getPriorityValue(task.getTaskPriority());
+        int priorityValue = switch (task.getTaskPriority().toLowerCase()) {
+            case "high" -> 3;
+            case "medium" -> 2;
+            case "low" -> 1;
+            default -> 0;
+        };
 
-        // Deadline contributes 40%
-        double deadlineWeight = 0.4;
+        // Progress contributes 30%
+        double progressWeight = 0.3;
+        double progressValue = task.getTaskCurrentProgress() / 100.0; // Assuming progress is a percentage (0-100)
+
+        // Deadline contributes 30%
+        double deadlineWeight = 0.3;
         long currentTime = System.currentTimeMillis();
-        long timeToDeadline = task.getTaskDeadline().getTime() - currentTime;
-        double deadlineScore = timeToDeadline > 0 ? 1.0 / timeToDeadline : 0;
-
-        // Progress contributes 20% - Invert progress so lower progress has higher priority
-        double progressWeight = 0.2;
-        double progressScore = 1.0 - (task.getTaskCurrentProgress() / 100.0); // Lower progress means higher score
+        long deadlineTime = task.getTaskDeadline().getTime();
+        double deadlineValue = deadlineTime > currentTime ? 1.0 - (deadlineTime - currentTime) / (double) (deadlineTime - task.getTaskCreationDate().getTime()) : 0.0;
 
         // Calculate total rank
-        return (priorityValue * priorityWeight) +
-                (deadlineScore * deadlineWeight) +
-                (progressScore * progressWeight);
+        return (priorityWeight * priorityValue) + (progressWeight * progressValue) + (deadlineWeight * deadlineValue);
     }
 
-    public List<Task> getAllTasksOfAnUserSortedByPriority(String userName) {
+
+    public List<Task> getAllTasksOfAnUserSortedByPriority() {
+        String  userName=UserCredentials.getCurrentUsername();
         List<Task> tasks = taskRepository.findByTaskParticipantsContains(userName);
         tasks.sort((t1, t2) -> {
             // Assuming priority is represented as "High", "Normal", "Low"
@@ -197,13 +208,15 @@ public class TaskService {
         };
     }
 
-    public List<Task> getAllTasksOfAnUserSortedByDeadline(String userName) {
+    public List<Task> getAllTasksOfAnUserSortedByDeadline() {
+        String  userName=UserCredentials.getCurrentUsername();
         List<Task> tasks = taskRepository.findByTaskParticipantsContains(userName);
         tasks.sort(Comparator.comparing(Task::getTaskDeadline)); // Ascending order (earliest deadline first)
         return tasks;
     }
 
-    public List<Task> getAllTasksOfAnUserSortedByProgress(String userName) {
+    public List<Task> getAllTasksOfAnUserSortedByProgress() {
+        String  userName=UserCredentials.getCurrentUsername();
         List<Task> tasks = taskRepository.findByTaskParticipantsContains(userName);
         tasks.sort(Comparator.comparingInt(Task::getTaskCurrentProgress)); // Ascending order (lowest progress first)
         return tasks;

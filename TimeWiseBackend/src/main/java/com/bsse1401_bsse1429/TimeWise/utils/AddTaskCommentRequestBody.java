@@ -8,6 +8,5 @@ import org.bson.types.ObjectId;
 @Setter
 public class AddTaskCommentRequestBody {
     private ObjectId taskId;
-    private String userName;
     private String taskComment;
 }

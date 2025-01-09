@@ -28,8 +28,8 @@ public class TeamController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Team> createTeam(@RequestBody Team team, @RequestParam String createdBy) {
-        return ResponseEntity.ok(teamService.createTeam(team, createdBy));
+    public ResponseEntity<Team> createTeam(@RequestBody Team team) {
+        return ResponseEntity.ok(teamService.createTeam(team));
     }
 
 //    @PostMapping("/{teamId}/request-join")
@@ -42,17 +42,17 @@ public class TeamController {
 //        return ResponseEntity.ok().build();
 //    }
 
-    @PostMapping("/{teamId}/handle-join")
-    public ResponseEntity<Team> handleJoinRequest(
-            @PathVariable ObjectId teamId,
-            @RequestParam String userName,
-            @RequestParam boolean accept
-    ) {
-        return ResponseEntity.ok(teamService.handleJoinRequest(teamId, userName, accept));
-    }
+//    @PostMapping("/{teamId}/handle-join")
+//    public ResponseEntity<Team> handleJoinRequest(
+//            @PathVariable ObjectId teamId,
+//            @RequestParam String userName,
+//            @RequestParam boolean accept
+//    ) {
+//        return ResponseEntity.ok(teamService.handleJoinRequest(teamId, userName, accept));
+//    }
 
     @GetMapping("/{userName}/my-teams")
     public ResponseEntity<List<Team>> getTeamsForUser(@PathVariable String userName) {
-        return ResponseEntity.ok(teamService.getTeamsForUser(userName));
+        return ResponseEntity.ok(teamService.getTeamsForUser());
     }
 }

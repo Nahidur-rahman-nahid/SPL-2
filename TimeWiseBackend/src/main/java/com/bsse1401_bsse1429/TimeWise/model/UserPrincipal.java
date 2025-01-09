@@ -1,5 +1,6 @@
 package com.bsse1401_bsse1429.TimeWise.model;
 
+import org.bson.types.ObjectId;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,6 +29,11 @@ public class UserPrincipal implements UserDetails {
     @Override
     public String getUsername() {
         return user.getUserName();
+    }
+
+
+    public ObjectId getUserId(){
+        return user.getUserId();
     }
 
     @Override

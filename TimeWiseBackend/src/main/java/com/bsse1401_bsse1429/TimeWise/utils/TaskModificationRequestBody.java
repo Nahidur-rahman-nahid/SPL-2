@@ -10,6 +10,5 @@ import org.bson.types.ObjectId;
 public class TaskModificationRequestBody {
     private ObjectId taskId;
     private String fieldName;
-    private String updatedBy;
     private Object newValue;
 }

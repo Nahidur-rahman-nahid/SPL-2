@@ -63,6 +63,8 @@ public class CollaborationEngine {
        // notificationService.sendNotification(notification);
     }
 
+
+
     // send mail to a user
     public String  sendEmail(Notification notification, String from, String to) {
         // Fetch recipient's email address

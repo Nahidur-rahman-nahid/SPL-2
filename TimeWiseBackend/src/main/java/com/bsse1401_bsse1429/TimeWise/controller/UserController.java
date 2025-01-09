@@ -24,7 +24,7 @@ public class UserController {
     @PostMapping("/login")
     public String login(@RequestBody User user) {
 
-        return service.verify(user);
+        return service.login(user);
     }
     @GetMapping("/check")
     public String check() {

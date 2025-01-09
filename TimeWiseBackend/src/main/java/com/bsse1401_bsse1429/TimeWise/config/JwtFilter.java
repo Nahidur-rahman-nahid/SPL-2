@@ -23,34 +23,37 @@ import java.io.IOException;
 public class JwtFilter extends OncePerRequestFilter {
 
     @Autowired
-    UserRepository userRepo;
-    @Autowired
     private JWTService jwtService;
 
     @Autowired
     private MyUserDetailsService myUserDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String authHeader = request.getHeader("Authorization");
-        String token = null;
-        ObjectId userId = null;
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
 
+        String authHeader = request.getHeader("Authorization");
+        String token=null;
+        String userId=null;
+
+        // Extract token and userId from the Authorization header
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
             try {
-                userId = jwtService.extractUserId(token); // Extract user ID from the token
+                 userId = jwtService.extractUserId(token).toHexString(); // Extract userId from the token as a string
             } catch (Exception e) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("Invalid or expired JWT token");
                 return;
             }
         }
-        User user=userRepo.findByUserId(userId);
+
+        // If the userId is valid, authenticate the user
         if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = myUserDetailsService.loadUserByUsername(user.getUserName());
+            UserDetails userDetails = myUserDetailsService.loadUserByUserId(userId); // Use the new method
             if (jwtService.validateToken(token, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }

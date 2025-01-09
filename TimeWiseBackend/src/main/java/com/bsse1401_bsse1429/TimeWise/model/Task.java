@@ -25,7 +25,7 @@ public class Task {
     private Date taskDeadline;
     private String taskOwner;
     private String taskGoal;
-    private Set<String> taskParticipants;
+    private Set<String> taskParticipants; // Letter on we may add task admins assigned by the task owner
     private List<Comment> taskComments;
     private TreeMap<String, List<Note>> taskNotes;
     private Integer taskCurrentProgress;
@@ -118,10 +118,6 @@ public class Task {
                 } else {
                     throw new IllegalArgumentException("taskDeadline must be a Date or a valid date string.");
                 }
-                break;
-            case "taskOwner":
-                previousValue = this.taskOwner;
-                this.taskOwner = (String) newValue;
                 break;
             default:
                 throw new IllegalArgumentException("Field name not recognized for modification.");

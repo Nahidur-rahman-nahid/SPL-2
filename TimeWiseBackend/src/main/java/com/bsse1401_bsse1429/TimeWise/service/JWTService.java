@@ -37,11 +37,10 @@ public class JWTService {
             System.out.println("Token expiration: " + tokenExpiration);
 
             Map<String, Object> claims = new HashMap<>();
-            return Jwts.builder()
-                    .setClaims(claims)
-                    .setSubject(userId.toHexString())  // Convert ObjectId to String
-                    .setIssuedAt(new Date(System.currentTimeMillis()))
-                    .setExpiration(new Date(System.currentTimeMillis() + tokenExpiration))
+            return Jwts.builder().claims(claims)
+                    .subject(userId.toHexString())  // Convert ObjectId to String
+                    .issuedAt(new Date(System.currentTimeMillis()))
+                    .expiration(new Date(System.currentTimeMillis() + tokenExpiration))
                     .signWith(getKey())
                     .compact();
         } catch (Exception e) {
@@ -82,7 +81,7 @@ public class JWTService {
         if (user == null) {
             throw new RuntimeException("User not found with userId: " + userId.toHexString());
         }
-        System.out.println("User found: " + user.getUserName());
+      //  System.out.println("User found: " + user.getUserName());
 
         return (user.getUserId().equals(userId) && !isTokenExpired(token));
 
@@ -103,6 +102,6 @@ public class JWTService {
             return claims.getExpiration().after(new Date()); // Check if token is not expired
         } catch (Exception e) {
             return false; // Token is invalid
-        }
+        }}
     }
-}
+

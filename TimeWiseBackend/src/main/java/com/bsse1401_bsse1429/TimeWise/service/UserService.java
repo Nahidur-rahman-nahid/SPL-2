@@ -36,26 +36,26 @@ public class UserService {
             return ResponseEntity.badRequest().body("Email already registered. Please use another email.");
         }
 
-        String pass=user.getPassword();
-
-        // Hash the password before saving
-        user.setPassword(encoder.encode(user.getPassword()));
-
         // Save the user in the database
+        String rawPassword = user.getPassword();
+        user.setPassword(encoder.encode(rawPassword));
         repo.save(user);
-        user.setPassword(pass);
-        // Automatically log in and generate token
-        String token = verify(user); // Pass the user object to verify
+
+        // Log saved data
+        System.out.println("User saved: " + user);
+
+        // Authenticate and generate token
+        user.setPassword(rawPassword); // Reset raw password for authentication
+        String token = login(user);
+
         return ResponseEntity.ok(token);
     }
 
-    // Verify user credentials and generate a JWT token
-    public String verify(User user) {
+    public String login(User user) {
         try {
             Authentication authentication = authManager.authenticate(
                     new UsernamePasswordAuthenticationToken(user.getUserName(), user.getPassword())
             );
-            System.out.println("Authentication Success: " + authentication.isAuthenticated());
 
             if (authentication.isAuthenticated()) {
                 User authenticatedUser = repo.findByUserName(user.getUserName());
@@ -63,13 +63,12 @@ public class UserService {
                     throw new IllegalArgumentException("User not found in the database.");
                 }
 
-                System.out.println("User ID: " + authenticatedUser.getUserId());
                 return jwtService.generateToken(authenticatedUser.getUserId());
             } else {
-                return "Authentication failed. Invalid credentials.";
+                throw new IllegalArgumentException("Authentication failed. Invalid credentials.");
             }
         } catch (Exception e) {
-            throw new IllegalArgumentException("Authentication failed. Bad credentials.");
+            throw new IllegalArgumentException("Authentication failed. Bad credentials.", e);
         }
     }
 }

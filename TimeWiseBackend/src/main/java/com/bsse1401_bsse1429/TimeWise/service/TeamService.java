@@ -4,6 +4,7 @@ import com.bsse1401_bsse1429.TimeWise.model.Team;
 import com.bsse1401_bsse1429.TimeWise.model.Notification;
 import com.bsse1401_bsse1429.TimeWise.repository.TeamRepository;
 //import com.bsse1401_bsse1429.TimeWise.repository.NotificationRepository;
+import com.bsse1401_bsse1429.TimeWise.utils.UserCredentials;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,7 +22,8 @@ public class TeamService {
 //    @Autowired
 //    private NotificationRepository notificationRepository;
 
-    public Team createTeam(Team team, String createdBy) {
+    public Team createTeam(Team team) {
+        String  createdBy= UserCredentials.getCurrentUsername();
         if (team.getTeamName() == null || teamRepository.findByTeamName(team.getTeamName()) != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Team name is required and must be unique.");
         }
@@ -60,40 +62,10 @@ public class TeamService {
         return teamRepository.save(team);
     }
 
-//    public void sendJoinRequest(ObjectId teamId, String userName, String requestedBy) {
-//        Team team = getTeamById(teamId);
-//
-//        if (!team.getTeamMembers().contains(requestedBy)) {
-//            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Only team members can invite others.");
-//        }
-//
-//        Notification notification = new Notification();
-//        notification.setRecipient(userName);
-//        notification.setSender(requestedBy);
-//        notification.setMessage("You have been invited to join the team: " + team.getTeamName());
-//        notification.setTeamId(teamId);
-//        notification.setType("Team Join Request");
-//        notification.setStatus("Pending");
-//
-//       // notificationRepository.save(notification);
-//    }
 
-    public Team handleJoinRequest(ObjectId teamId, String userName, boolean accept) {
-        Team team = getTeamById(teamId);
 
-        if (!accept) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User declined the invitation.");
-        }
-
-        if (team.getTeamMembers().contains(userName)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is already a member.");
-        }
-
-        team.getTeamMembers().add(userName);
-        return teamRepository.save(team);
-    }
-
-    public List<Team> getTeamsForUser(String userName) {
+    public List<Team> getTeamsForUser() {
+        String  userName=UserCredentials.getCurrentUsername();
         return teamRepository.findByTeamMembersContaining(userName);
     }
 

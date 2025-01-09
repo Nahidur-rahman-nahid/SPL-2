@@ -16,7 +16,7 @@ public class Team {
     private ObjectId teamId;
     private String teamName;
     private String teamDescription;
-    private Set<String> teamMembers;
+    private Set<String> teamMembers; // Letter on we may add team admins assigned by the team owner
     private String teamOwner;
     private Date creationDate;
     private List<String> teamGoals;
