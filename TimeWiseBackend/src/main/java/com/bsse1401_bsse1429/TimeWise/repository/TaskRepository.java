@@ -11,4 +11,6 @@ import java.util.List;
 public interface TaskRepository extends MongoRepository<Task, ObjectId> {
     List<Task> findByTaskParticipantsContains(String userName);
 
+    Task findByTaskNameAndTaskOwner(String taskName,String userName);
+
 }

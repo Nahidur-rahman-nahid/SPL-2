@@ -27,6 +27,10 @@ public class TaskService {
     public Task createTask(Task task) {
 
         String userName=UserCredentials.getCurrentUsername();
+        Task dupplicateTask= taskRepository.findByTaskOwnerAndTaskName(userName,task.getTaskName());
+        if(dupplicateTask!=null){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You already have a task with that task name.");
+        }
 
         task.setTaskOwner(userName);
 

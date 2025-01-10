@@ -24,7 +24,7 @@ public class TeamController {
     @PostMapping("/invite")
     public String inviteMembersToTeam(@RequestBody Notification notification, @RequestParam String from, @RequestParam String to) {
         //return ResponseEntity.ok(teamService.createTeam(team, createdBy));
-        return collaborationEngine.sendEmail(notification,from,to);
+        return collaborationEngine.sendEmail(notification);
     }
 
     @PostMapping("/create")

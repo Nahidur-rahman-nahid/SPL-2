@@ -1,194 +1,234 @@
 package com.bsse1401_bsse1429.TimeWise.engine;
 
 import com.bsse1401_bsse1429.TimeWise.model.*;
+import com.bsse1401_bsse1429.TimeWise.repository.NotificationRepository;
+import com.bsse1401_bsse1429.TimeWise.repository.TaskRepository;
+import com.bsse1401_bsse1429.TimeWise.repository.TeamRepository;
 import com.bsse1401_bsse1429.TimeWise.repository.UserRepository;
-//import com.bsse1401_bsse1429.TimeWise.service.NotificationService;
-import com.bsse1401_bsse1429.TimeWise.service.TeamService;
-import com.bsse1401_bsse1429.TimeWise.service.TaskService;
-import com.bsse1401_bsse1429.TimeWise.service.UserService;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.bson.types.ObjectId;
+import com.bsse1401_bsse1429.TimeWise.utils.UserCredentials;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
-import java.util.Date;
+import java.util.*;
 
 @Component
 public class CollaborationEngine {
 
-//    @Autowired
-//    private NotificationService notificationService;
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     @Autowired
-    private TeamService teamService;
+    private TeamRepository teamRepository;
 
     @Autowired
-    private TaskService taskService;
-
-
-    @Autowired
-    private UserRepository userRepository;
+    private TaskRepository taskRepository;
 
     @Autowired
-    private JavaMailSender mailSender;
+    private UserRepository userRepositoryInstance;
+
+    @Autowired
+    private JavaMailSender mailSenderInstance;
+
+    private static UserRepository userRepository;
+    private static JavaMailSender mailSender;
+
+    @PostConstruct
+    private void initStaticDependencies() {
+        userRepository = userRepositoryInstance;
+        mailSender = mailSenderInstance;
+    }
+
+    // Main method to send notifications
+    public String sendNotification(String entityName, String notificationSubject, String recipient, String messageContent) {
+        String sender = UserCredentials.getCurrentUsername();
+        Notification notification = null;
+
+        switch (notificationSubject) {
+            case "TEAM_INVITATION":
+            case "TASK_INVITATION":
+                notification = createNotification(sender, notificationSubject, entityName, recipient,
+                        sender + " invited you to join the " + (notificationSubject.equals("TEAM_INVITATION") ? "team " : "task ") + entityName);
+                handleInvitation(entityName, sender, recipient, notificationSubject);
+                break;
+
+            case "ASK_TO_JOIN_TEAM":
+            case "ASK_TO_JOIN_TASK":
+                notification = createNotification(sender, notificationSubject, entityName, recipient,
+                        sender + " requested to join the " + (notificationSubject.equals("ASK_TO_JOIN_TEAM") ? "team " : "task ") + entityName + ". Message: " + messageContent);
+                break;
+
+            case "TEAM_MESSAGE":
+                notification = createTeamNotification(sender, entityName, "Message from " + sender + " to team " + entityName + ": " + messageContent);
+                break;
+
+            case "USER_MESSAGE":
+                notification = createNotification(sender, notificationSubject, null, recipient,
+                        "Message from " + sender + " to you: " + messageContent);
+                break;
+
+            case "SYSTEM_MESSAGE":
+                notification = createNotification(sender, notificationSubject, null, sender, "System alert: " + messageContent);
+                break;
+
+            default:
+                throw new IllegalArgumentException("Invalid notification subject");
+        }
+
+        notificationRepository.save(notification);
+        return sendEmail(notification);
+    }
+
+    public String handleResponse(String entityName, String notificationSubject, String entityOwner, String response) {
+        String respondedBy = UserCredentials.getCurrentUsername();
+        Notification notification = createNotification(respondedBy, notificationSubject, entityName, entityOwner,
+                "Response: " + response);
+
+        switch (notificationSubject) {
+            case "REPLY_TO_TEAM_INVITATION":
+                handleInvitationResponse(entityName, respondedBy, entityOwner, response, true);
+                break;
+
+            case "REPLY_TO_TASK_INVITATION":
+                handleInvitationResponse(entityName, respondedBy, entityOwner, response, false);
+                break;
 
 
-    /**
-     * Sends a team invitation to a user.
-     * The team object represents the team sending the invitation.
-     * The userName is the name of the user to invite.
-     * The invitedBy is the team member sending the invitation.
-     */
-    public String sendTeamInvitation(Team team, String invitedTo, String invitedBy) {
-//        if (!team.getTeamOwner().equals(invitedBy)) {
-//            throw new IllegalArgumentException("Only team owner can invite others.");
-//        }
+            case "REPLY_TO_JOIN_TEAM_REQUEST":
+            case "REPLY_TO_JOIN_TASK_REQUEST":
+                handleJoinRequestResponse(entityName, respondedBy, entityOwner, response,
+                        notificationSubject.equals("REPLY_TO_JOIN_TEAM_REQUEST"));
+                break;
 
+            default:
+                throw new IllegalArgumentException("Invalid notification subject");
+        }
+
+        notificationRepository.save(notification);
+        return sendEmail(notification);
+    }
+
+    private Notification createNotification(String sender, String subject, String entityName, String recipient, String messageContent) {
         Notification notification = new Notification();
-        notification.setSender(invitedBy);
-        notification.setRecipient(invitedTo);
-        notification.setNotificationSubject("Team Invitation");
-        notification.setNotificationMessage("Myself "+invitedBy+" inviting you to join the team: " + team.getTeamName());
+        notification.setSender(sender);
+        notification.setNotificationSubject(subject);
+        notification.setNotificationMessage(messageContent);
+        notification.setEntityNameRelatedToNotification(entityName);
+        notification.setRecipients(Collections.singleton(recipient));
         notification.setNotificationStatus("Unseen");
-        notification.setTimestamp(new Date());
-
-       return  sendEmail(notification,invitedBy,invitedTo);
-
-       // notificationService.sendNotification(notification);
+        notification.setTimeStamp(new Date());
+        return notification;
     }
 
-
-
-    // send mail to a user
-    public String  sendEmail(Notification notification, String from, String to) {
-        // Fetch recipient's email address
-        User recipient = userRepository.findByUserName(to);
-        if (recipient == null) {
-            throw new IllegalArgumentException("Recipient user not found.");
+    private Notification createTeamNotification(String sender, String teamName, String messageContent) {
+        Team team = teamRepository.findByTeamName(teamName);
+        if (team == null) {
+            throw new IllegalArgumentException("Team not found.");
         }
-        String recipientEmail = recipient.getEmail();
-
-        // Fetch sender's email address
-        User sender = userRepository.findByUserName(from);
-        if (sender == null) {
-            throw new IllegalArgumentException("Sender user not found.");
-        }
-        String senderEmail = sender.getEmail();
-
-        // Prepare email
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(senderEmail); // Sender's email address
-        message.setTo(recipientEmail); // Recipient's email address
-        message.setSubject(notification.getNotificationSubject()); // Subject of the email
-        message.setText(notification.getNotificationMessage()); // Body of the email
-
-        // Send the email
-        mailSender.send(message);
-        return "Email sent successfully from " + senderEmail + " to " + recipientEmail;
+        Notification notification = createNotification(sender, "TEAM_MESSAGE", teamName, null, messageContent);
+        notification.setRecipients(new HashSet<>(team.getTeamMembers()));
+        return notification;
     }
 
+    private void handleInvitation(String entityName, String sender, String recipient, String subject) {
+        if ("TEAM_INVITATION".equals(subject)) {
+            Team team = teamRepository.findByTeamNameAndTeamOwner(entityName, sender);
+            if (team == null) {
+                throw new IllegalArgumentException("Team not found.");
+            }
+            team.getInvitedMembers().add(recipient);
+            teamRepository.save(team);
+        } else if ("TASK_INVITATION".equals(subject)) {
+            Task task = taskRepository.findByTaskNameAndTaskOwner(entityName, sender);
+            if (task == null) {
+                throw new IllegalArgumentException("Task not found.");
+            }
+            task.getInvitedMembers().add(recipient);
+            taskRepository.save(task);
+        }
+    }
+    private void handleInvitationResponse(String entityName, String respondedBy, String entityOwner, String response, boolean isTeam) {
+        if (isTeam) {
+            Team team = teamRepository.findByTeamNameAndTeamOwner(entityName, entityOwner);
+            processInvitationResponse(team, respondedBy, response, true);
+        } else {
+            Task task = taskRepository.findByTaskNameAndTaskOwner(entityName, entityOwner);
+            processInvitationResponse(task, respondedBy, response, false);
+        }
+    }
 
-    /**
-     * Handles acceptance of a team invitation.
-     * The teamId identifies the team, and userName is the user accepting the invitation.
-     */
-//    public void acceptTeamInvitation(String teamId, String userName) {
-//        Team team = teamService.getTeamById(teamId);
-//        if (team.getTeamMembers().contains(userName)) {
-//            throw new IllegalArgumentException("User is already a member of the team.");
-//        }
-//
-//        team.getTeamMembers().add(userName);
-//        teamService.updateTeam(team);
-//
-//        notifyTeamModification(team, "System");
-//    }
-//
-//    /**
-//     * Notifies all team members about modifications to the team.
-//     * The team object represents the modified team, and modifiedBy is the user making the modification.
-//     */
-//    public void notifyTeamModification(Team team, String modifiedBy) {
-//        String message = "The team '" + team.getTeamName() + "' was updated by " + modifiedBy + ".";
-//        for (String member : team.getTeamMembers()) {
-//            Notification notification = new Notification();
-//            notification.setRecipient(member);
-//            notification.setSender("System");
-//            notification.setMessage(message);
-//            notification.setType("Team Modification");
-//            notification.setTimestamp(new Date());
-//
-//            notificationService.sendNotification(notification);
-//        }
-//    }
-//
-//    /**
-//     * Assigns a task to a user and notifies them.
-//     * The taskId identifies the task, assignedTo is the user assigned the task, and assignedBy is the user assigning the task.
-//     */
-//    public void assignTaskToUser(String taskId, String assignedTo, String assignedBy) {
-//        Task task = taskService.getTaskById(taskId);
-//
-//        if (!taskService.isUserAuthorizedToAssignTask(assignedBy, task)) {
-//            throw new IllegalArgumentException("You are not authorized to assign this task.");
-//        }
-//
-//        task.setAssignedTo(assignedTo);
-//        taskService.updateTask(task);
-//
-//        Notification notification = new Notification();
-//        notification.setRecipient(assignedTo);
-//        notification.setSender(assignedBy);
-//        notification.setMessage("You have been assigned a new task: " + task.getTaskName());
-//        notification.setType("Task Assignment");
-//        notification.setTimestamp(new Date());
-//
-//        notificationService.sendNotification(notification);
-//    }
-//
-//    /**
-//     * Notifies team members about a new task added to the team.
-//     * The task object represents the task, the team object represents the team, and addedBy is the user adding the task.
-//     */
-//    public void notifyTeamAboutTask(Task task, Team team, String addedBy) {
-//        String message = "A new task '" + task.getTaskName() + "' has been added to the team '" + team.getTeamName() + "' by " + addedBy + ".";
-//        for (String member : team.getTeamMembers()) {
-//            Notification notification = new Notification();
-//            notification.setRecipient(member);
-//            notification.setSender(addedBy);
-//            notification.setMessage(message);
-//            notification.setType("Task Addition");
-//            notification.setTimestamp(new Date());
-//
-//            notificationService.sendNotification(notification);
-//        }
-//    }
-//
-//    /**
-//     * Tracks collaboration logs for auditing.
-//     * The action specifies the activity performed (e.g., "Task Assigned"), performedBy is the user performing the action,
-//     * and details provides additional context for the action.
-//     */
-//    public void trackCollaborationLog(String action, String performedBy, String details) {
-//        // Example: Store in a database or log file.
-//        System.out.println("Collaboration Log: Action - " + action + ", Performed By - " + performedBy + ", Details - " + details);
-//        // This could be expanded to store logs in a persistent system.
-//    }
-//
-//    /**
-//     * Pushes real-time updates for collaboration.
-//     * The message represents the update content, and recipient is the target user for the update.
-//     */
-//    public void pushRealTimeUpdates(String message, String recipient) {
-//        // Logic for real-time updates (e.g., WebSocket, Push Notification).
-//        System.out.println("Real-time update sent to " + recipient + ": " + message);
-//    }
+    private <T> void processInvitationResponse(T entity, String respondedBy, String response, boolean isTeam) {
+        if (isTeam && entity instanceof Team team) {
+            modifyInvitationResponse(team.getInvitedMembers(), team.getTeamMembers(), respondedBy, response);
+            teamRepository.save(team);
+        } else if (!isTeam && entity instanceof Task task) {
+            modifyInvitationResponse(task.getInvitedMembers(), task.getTaskParticipants(), respondedBy, response);
+            taskRepository.save(task);
+        }
+    }
 
+    private void modifyInvitationResponse(Set<String> invitedMembers, Set<String> members, String respondedBy, String response) {
+        invitedMembers.remove(respondedBy);
+        if ("accept".equalsIgnoreCase(response)) {
+            members.add(respondedBy);
+        }
+    }
+
+    private void handleJoinRequestResponse(String entityName, String respondedBy, String entityOwner, String response, boolean isTeam) {
+        if (isTeam) {
+            Team team = teamRepository.findByTeamNameAndTeamOwner(entityName, entityOwner);
+            processJoinResponse(team, respondedBy, response, true);
+        } else {
+            Task task = taskRepository.findByTaskNameAndTaskOwner(entityName, entityOwner);
+            processJoinResponse(task, respondedBy, response, false);
+        }
+    }
+
+    private <T> void processJoinResponse(T entity, String respondedBy, String response, boolean isTeam) {
+        if (isTeam && entity instanceof Team team) {
+            modifyJoinResponse(team.getMembersRequestedForJoining(), team.getTeamMembers(), respondedBy, response);
+            teamRepository.save(team);
+        } else if (!isTeam && entity instanceof Task task) {
+            modifyJoinResponse(task.getMembersRequestedForJoining(), task.getTaskParticipants(), respondedBy, response);
+            taskRepository.save(task);
+        }
+    }
+
+    private void modifyJoinResponse(Set<String> requested, Set<String> members, String respondedBy, String response) {
+        requested.remove(respondedBy);
+        if ("accept".equalsIgnoreCase(response)) {
+            members.add(respondedBy);
+        }
+    }
+
+    private String sendEmail(Notification notification) {
+        StringBuilder emailStatus = new StringBuilder();
+        List<User> recipients = userRepository.findByUserNames(notification.getRecipients());
+        User sender = userRepository.findByUserName(notification.getSender());
+
+        if (recipients == null || sender == null || sender.getEmail() == null) {
+            throw new IllegalArgumentException("Invalid sender or recipient details.");
+        }
+
+        for (User recipient : recipients) {
+            if (recipient == null || recipient.getEmail() == null) {
+                emailStatus.append("Failed to send email to a recipient with missing email.\n");
+                continue;
+            }
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(sender.getEmail());
+            message.setTo(recipient.getEmail());
+            message.setSubject(notification.getNotificationSubject());
+            message.setText(notification.getNotificationMessage());
+            try {
+                mailSender.send(message);
+                emailStatus.append("Email sent to ").append(recipient.getUserName()).append("\n");
+            } catch (Exception e) {
+                emailStatus.append("Failed to send email to ").append(recipient.getUserName()).append(": ").append(e.getMessage()).append("\n");
+            }
+        }
+        return emailStatus.toString();
+    }
 }
-

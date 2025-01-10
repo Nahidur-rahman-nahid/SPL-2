@@ -26,6 +26,8 @@ public class Task {
     private String taskOwner;
     private String taskGoal;
     private Set<String> taskParticipants; // Letter on we may add task admins assigned by the task owner
+    private Set<String> invitedMembers;
+    private Set<String> membersRequestedForJoining;
     private List<Comment> taskComments;
     private TreeMap<String, List<Note>> taskNotes;
     private Integer taskCurrentProgress;
