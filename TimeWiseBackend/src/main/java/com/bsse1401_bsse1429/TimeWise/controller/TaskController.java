@@ -22,14 +22,14 @@ public class TaskController {
     private TaskService taskService;
 
     // Create Task
-    @PostMapping("/createTask")
+    @PostMapping("/create")
     public ResponseEntity<Task> createTask(@RequestBody Task task) {
         Task createdTask = taskService.createTask(task);
         return ResponseEntity.ok(createdTask);
     }
 
     // Get all tasks of a User
-    @GetMapping("/allTasks")
+    @GetMapping("/all")
     public ResponseEntity<List<Task>> allTasks() {
 
         List<Task> tasks = taskService.getAllTasksOfAnUser();
@@ -37,7 +37,7 @@ public class TaskController {
     }
 
     // Get all tasks sorted on priority (high, normal, low)
-    @GetMapping("/allTasks/sortedbypriority")
+    @GetMapping("/all/sort/priority")
     public ResponseEntity<List<Task>> allTasksSortedByPriority() {
 
         List<Task> tasks = taskService.getAllTasksOfAnUserSortedByPriority();
@@ -45,7 +45,7 @@ public class TaskController {
     }
 
     // Get all tasks sorted on deadline
-    @GetMapping("/allTasks/sortedbydeadline")
+    @GetMapping("/all/sort/deadline")
     public ResponseEntity<List<Task>> allTasksSortedByDeadline() {
 
         List<Task> tasks = taskService.getAllTasksOfAnUserSortedByDeadline();
@@ -53,7 +53,7 @@ public class TaskController {
     }
 
     // Get all tasks sorted on progress
-    @GetMapping("/allTasks/sortedbyprogress")
+    @GetMapping("/all/sort/progress")
     public ResponseEntity<List<Task>> allTasksSortedByProgress() {
 
         List<Task> tasks = taskService.getAllTasksOfAnUserSortedByProgress();
@@ -61,7 +61,7 @@ public class TaskController {
     }
 
     // Delete Task
-    @PostMapping("/deletetask")
+    @PostMapping("/delete")
     public ResponseEntity<Void> deleteTask(@RequestBody ObjectId taskId) {
 
         taskService.deleteTask(taskId);
@@ -69,7 +69,7 @@ public class TaskController {
     }
 
     // Add Task Comment
-    @PostMapping("/addtaskcomment")
+    @PostMapping("/add/comment")
     public ResponseEntity<Task> addTaskComment(@RequestBody AddTaskCommentRequestBody addTaskCommentRequestBody) {
         Task updatedTask = taskService.addTaskComment(addTaskCommentRequestBody.getTaskId(), addTaskCommentRequestBody.getTaskComment());
         if (updatedTask != null) {
@@ -79,7 +79,7 @@ public class TaskController {
     }
 
     // Add Task Note
-    @PostMapping("/addtasknote")
+    @PostMapping("/add/note")
     public ResponseEntity<Task> addTaskNote(@RequestBody AddTaskNoteRequestBody addTaskNoteRequestBody) {
         Task updatedTask = taskService.addTaskNote(addTaskNoteRequestBody.getTaskId(), addTaskNoteRequestBody.getTaskNote());
         if (updatedTask != null) {
@@ -89,13 +89,18 @@ public class TaskController {
     }
 
     // Modify a Task
-    @PostMapping("/modifytask")
+    @PostMapping("/modify")
     public ResponseEntity<Task> modifyTaskAttribute(@RequestBody TaskModificationRequestBody taskModificationRequestBody) {
         Task updatedTask = taskService.modifyTaskAttribute(taskModificationRequestBody.getTaskId(), taskModificationRequestBody.getFieldName(), taskModificationRequestBody.getNewValue());
         if (updatedTask != null) {
             return ResponseEntity.ok(updatedTask);
         }
         return ResponseEntity.badRequest().body(null);
+    }
+
+    @GetMapping("/{taskId}")
+    public ResponseEntity<?> getTaskDetails(@PathVariable ObjectId taskId) {
+        return taskService.getTaskDetails(taskId);
     }
 
 

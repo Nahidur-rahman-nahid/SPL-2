@@ -22,8 +22,6 @@ public class User {
     private String userStatus; // active or inactive(logged out or manual inactive setting)
     private List<Todo> todos;
     private List<String> usersFollowing;
-    private String verificationCode;
-    private Date verificationCodeExpiry;
 
 
     @Data

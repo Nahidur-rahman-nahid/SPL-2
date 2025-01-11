@@ -17,10 +17,10 @@ import java.util.List;
 class Session {
     @Id
     private ObjectId sessionId;
-    private String userName;
-    private Date sessionStartTime;
-    private Date sessionEndTime;
+    private String sessionCreator;
+    private Date sessionTimeStamp;
     private Double duration;
+    private String sessionGoal;
     private String sessionSummary;
-    private List<ObjectId> tasksOperated;
+    private ObjectId taskOperated;
 }

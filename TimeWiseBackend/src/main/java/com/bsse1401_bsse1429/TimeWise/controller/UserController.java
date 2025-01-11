@@ -42,6 +42,10 @@ public class UserController {
         return userService.forgottenAccountVerification(code,userEmail);
     }
 
+    @GetMapping("/details")
+    public ResponseEntity<?> getUserDetails(@PathVariable String userName) {
+        return userService.getUserDetails(userName);
+    }
 
 
 

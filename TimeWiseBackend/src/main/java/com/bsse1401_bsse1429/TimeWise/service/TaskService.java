@@ -2,11 +2,12 @@ package com.bsse1401_bsse1429.TimeWise.service;
 
 import com.bsse1401_bsse1429.TimeWise.model.Task;
 import com.bsse1401_bsse1429.TimeWise.repository.TaskRepository;
+import com.bsse1401_bsse1429.TimeWise.utils.TaskDetailResponse;
 import com.bsse1401_bsse1429.TimeWise.utils.UserCredentials;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.web.webauthn.management.UserCredentialRepository;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -224,6 +225,32 @@ public class TaskService {
         List<Task> tasks = taskRepository.findByTaskParticipantsContains(userName);
         tasks.sort(Comparator.comparingInt(Task::getTaskCurrentProgress)); // Ascending order (lowest progress first)
         return tasks;
+    }
+
+    public ResponseEntity<?> getTaskDetails(ObjectId taskId) {
+        // Fetch the task from the database
+        Task task = taskRepository.findByTaskId(taskId);
+
+        if(task==null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Task not found");
+        }
+        if ("private".equalsIgnoreCase(task.getTaskVisibilityStatus())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Task is private");
+        }
+
+
+            // Map only the required fields to a new DTO object
+            TaskDetailResponse taskResponse = new TaskDetailResponse(
+                    task.getTaskName(),
+                    task.getTaskCategory(),
+                    task.getTaskCreationDate(),
+                    task.getTaskOwner(),
+                    task.getTaskGoal(),
+                    task.getTaskParticipants()
+            );
+
+            return ResponseEntity.ok(taskResponse);
+
     }
 
 

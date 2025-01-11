@@ -30,8 +30,9 @@ public class Task {
     private Set<String> membersRequestedForJoining;
     private List<Comment> taskComments;
     private TreeMap<String, List<Note>> taskNotes;
-    private Integer taskCurrentProgress;
+    private Integer taskCurrentProgress; // 0 / 25 / 50 / 75 / 100
     private List<TaskModification> taskModificationHistory;
+    private List<TaskTodo> taskTodos;
 
     // Method to update progress with validation, now using modifyTaskAttribute
     public void updateTaskProgress(String updatedBy, Object newProgress) {
@@ -161,6 +162,14 @@ public class Task {
         private String updatedBy;
         private Object previousValue;
         private Object newValue;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TaskTodo {
+        private String description;
+        private String status; // complete or incomplete
     }
 
 }

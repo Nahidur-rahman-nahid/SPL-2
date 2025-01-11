@@ -4,7 +4,10 @@ import ch.qos.logback.classic.encoder.JsonEncoder;
 import com.bsse1401_bsse1429.TimeWise.engine.CollaborationEngine;
 import com.bsse1401_bsse1429.TimeWise.model.Notification;
 import com.bsse1401_bsse1429.TimeWise.repository.UserRepository;
+import com.bsse1401_bsse1429.TimeWise.repository.TeamRepository;
+import com.bsse1401_bsse1429.TimeWise.repository.TaskRepository;
 import com.bsse1401_bsse1429.TimeWise.repository.VerificationCodeRepository;
+import com.bsse1401_bsse1429.TimeWise.utils.UserDetailResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Date;
+import java.util.stream.Collectors;
 
 @Service
 public class SystemService {
@@ -32,6 +36,13 @@ public class SystemService {
 
     @Autowired
     private static UserRepository userRepository;
+
+    @Autowired
+    private static TaskRepository taskRepository;
+
+    @Autowired
+    private static TeamRepository teamRepository;
+
 
     @Autowired
     private static VerificationCodeRepository verificationCodeRepository;
@@ -200,4 +211,51 @@ public class SystemService {
         );
 
     }
+
+    public static ResponseEntity<?> getUserAccountDetails(String userName) {
+        // Check if the user exists
+        User user = userRepository.findByUserName(userName);
+
+        if (user != null) {
+            // Initialize UserDetailResponse
+            UserDetailResponse userDetailResponse = new UserDetailResponse();
+            userDetailResponse.setUserName(user.getUserName());
+            userDetailResponse.setUserEmail(user.getUserEmail());
+            userDetailResponse.setShortBioData(user.getShortBioData());
+            userDetailResponse.setRole(user.getRole());
+            userDetailResponse.setUserStatus(user.getUserStatus());
+
+            // Fetch tasks where user is a participant or tasks marked as public
+            List<UserDetailResponse.UserTasks> userTasks = taskRepository.findAll().stream()
+                    .filter(task ->
+                            task.getTaskParticipants().contains(userName) ||
+                                    "public".equalsIgnoreCase(task.getTaskVisibilityStatus()))
+                    .map(task -> new UserDetailResponse.UserTasks(
+                            task.getTaskId(),
+                            task.getTaskName(),
+                            task.getTaskCategory(),
+                            task.getTaskDescription()
+                    ))
+                    .collect(Collectors.toList());
+            userDetailResponse.setUserTasks(userTasks);
+
+            // Fetch teams where user is a member or teams marked as public
+            List<UserDetailResponse.UserTeams> userTeams = teamRepository.findAll().stream()
+                    .filter(team ->
+                            team.getTeamMembers().contains(userName) ||
+                                    "public".equalsIgnoreCase(team.getTeamVisibilityStatus()))
+                    .map(team -> new UserDetailResponse.UserTeams(
+                            team.getTeamName(),
+                            team.getTeamEmail(),
+                            team.getTeamDescription()
+                    ))
+                    .collect(Collectors.toList());
+            userDetailResponse.setUserTeams(userTeams);
+
+            return ResponseEntity.ok(userDetailResponse);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
+    }
+
 }

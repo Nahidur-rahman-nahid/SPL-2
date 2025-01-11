@@ -4,10 +4,12 @@ import com.bsse1401_bsse1429.TimeWise.model.Team;
 import com.bsse1401_bsse1429.TimeWise.model.Notification;
 import com.bsse1401_bsse1429.TimeWise.repository.TeamRepository;
 //import com.bsse1401_bsse1429.TimeWise.repository.NotificationRepository;
+import com.bsse1401_bsse1429.TimeWise.utils.TeamDetailResponse;
 import com.bsse1401_bsse1429.TimeWise.utils.UserCredentials;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -74,4 +76,30 @@ public class TeamService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found with ID: " + teamId)
         );
     }
+    public ResponseEntity<?> getTeamDetails(String teamName) {
+        // Fetch the team by teamName
+        Team team = teamRepository.findByTeamName(teamName);
+
+        if(team==null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Team not found");
+        }
+        if ("private".equalsIgnoreCase(team.getTeamVisibilityStatus())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Team is private");
+        }
+
+            // Map only the required fields to a new DTO object
+            TeamDetailResponse teamResponse = new TeamDetailResponse(
+                    team.getTeamName(),
+                    team.getTeamEmail(),
+                    team.getTeamDescription(),
+                    team.getTeamMembers(),
+                    team.getTeamOwner(),
+                    team.getCreationDate()
+
+            );
+
+            return ResponseEntity.ok(teamResponse);
+
+    }
+
 }

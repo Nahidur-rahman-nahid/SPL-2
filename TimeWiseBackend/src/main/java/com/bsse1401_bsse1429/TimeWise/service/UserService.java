@@ -4,6 +4,7 @@ import com.bsse1401_bsse1429.TimeWise.engine.CollaborationEngine;
 import com.bsse1401_bsse1429.TimeWise.model.User;
 import com.bsse1401_bsse1429.TimeWise.repository.UserRepository;
 import com.bsse1401_bsse1429.TimeWise.utils.NotificationRequestBody;
+import com.bsse1401_bsse1429.TimeWise.utils.UserDetailResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,8 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -45,6 +48,12 @@ public class UserService {
         return SystemService.verifyVerificationCodeForAccountVerification(code,userEmail);
     }
 
+    public ResponseEntity<?> getUserDetails(String userName) {
+       return SystemService.getUserAccountDetails(userName);
+    }
+
+
+
 
 //    public ResponseEntity<?> resetPassword(String email, String verificationCode, String newPassword) {
 //        User user = userRepository.findByEmail(email);
@@ -72,15 +81,5 @@ public class UserService {
 
 
 
-//    public ResponseEntity<?> forgotUserCredentials(String userEmail) {
-//        List<User> users =userRepository.findByUserEmail(userEmail);
-//        List<String> userNames=new ArrayList<>();
-//        for(User user:users){
-//            userNames.add(user.getUserName());
-//        }
-//        if(userNames.isEmpty()){
-//            ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User not found");
-//        }
-//        return ResponseEntity.ok(userNames);
-//    }
+
 }

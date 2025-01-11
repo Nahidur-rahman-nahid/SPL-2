@@ -32,6 +32,11 @@ public class TeamController {
         return ResponseEntity.ok(teamService.createTeam(team));
     }
 
+    @GetMapping("/{teamName}")
+    public ResponseEntity<?> getTeamDetails(@PathVariable String teamName) {
+        return teamService.getTeamDetails(teamName);
+    }
+
 //    @PostMapping("/{teamId}/request-join")
 //    public ResponseEntity<Void> sendJoinRequest(
 //            @PathVariable ObjectId teamId,
