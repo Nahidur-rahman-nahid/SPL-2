@@ -13,4 +13,5 @@ public interface TaskRepository extends MongoRepository<Task, ObjectId> {
 
     Task findByTaskNameAndTaskOwner(String taskName,String userName);
 
+    Task findByTaskOwnerAndTaskName(String userName, String taskName);
 }

@@ -13,9 +13,9 @@ import java.util.Set;
 public interface UserRepository extends MongoRepository<User, Integer> {
 
     User findByUserName(String username);
-    User findByEmail(String email);
     User findByUserNameAndPassword(String username, String password);
     User findByUserId(ObjectId userId);
-    List<User> findByUserNames(Set<String> usernames);
+    List<User> findByUserNameIn(Set<String> userNames);
 
+    List<User> findByUserEmail(String userEmail);
 }

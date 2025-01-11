@@ -40,7 +40,7 @@ public class Notification {
         REPLY_TO_JOIN_TASK_REQUEST,
         TEAM_MESSAGE,
         USER_MESSAGE,
-        SYSTEM_MESSAGE
+        TIMEWISE_MESSAGE
     }
 
     // Centralized method for creating notifications

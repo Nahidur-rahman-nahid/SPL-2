@@ -1,8 +1,11 @@
 package com.bsse1401_bsse1429.TimeWise.service;
 
+import com.bsse1401_bsse1429.TimeWise.engine.CollaborationEngine;
 import com.bsse1401_bsse1429.TimeWise.model.User;
 import com.bsse1401_bsse1429.TimeWise.repository.UserRepository;
+import com.bsse1401_bsse1429.TimeWise.utils.NotificationRequestBody;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -10,65 +13,74 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
 @Service
 public class UserService {
 
-    @Autowired
-    private JWTService jwtService;
 
     @Autowired
-    private AuthenticationManager authManager;
+    private UserRepository userRepository;
 
-    @Autowired
-    private UserRepository repo;
-
-    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
+   // private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
     // Register a new user and generate a token
-    public ResponseEntity<?> register(User user) {
-        // Check for duplicate username
-        if (repo.findByUserName(user.getUserName()) != null) {
-            return ResponseEntity.badRequest().body("Username already exists. Please choose another.");
-        }
-
-        // Check for duplicate email
-        if (repo.findByEmail(user.getEmail()) != null) {
-            return ResponseEntity.badRequest().body("Email already registered. Please use another email.");
-        }
-
-        // Save the user in the database
-        String rawPassword = user.getPassword();
-        user.setPassword(encoder.encode(rawPassword));
-        repo.save(user);
-
-        // Log saved data
-        System.out.println("User saved: " + user);
-
-        // Authenticate and generate token
-        user.setPassword(rawPassword); // Reset raw password for authentication
-        String token = login(user);
-
-        return ResponseEntity.ok(token);
+    public ResponseEntity<?> initiateRegistration(User user) {
+        return SystemService.checkRegistrationCredentialsAndSendRegistrationVerificationCode(user);
+    }
+    public ResponseEntity<?> completeRegistration(User user,String code) {
+        return SystemService.verifyVerificationCodeAndCompleteRegistration(user,code);
+    }
+    public ResponseEntity<?> userLogin(User user) {
+        return SystemService.performUserLogin(user);
     }
 
-    public String login(User user) {
-        try {
-            Authentication authentication = authManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(user.getUserName(), user.getPassword())
-            );
-
-            if (authentication.isAuthenticated()) {
-                User authenticatedUser = repo.findByUserName(user.getUserName());
-                if (authenticatedUser == null) {
-                    throw new IllegalArgumentException("User not found in the database.");
-                }
-
-                return jwtService.generateToken(authenticatedUser.getUserId());
-            } else {
-                throw new IllegalArgumentException("Authentication failed. Invalid credentials.");
-            }
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Authentication failed. Bad credentials.", e);
-        }
+    public ResponseEntity<?> forgotUserCredentials(String userEmail) {
+        return SystemService.handleForgotUserCredentials(userEmail);
     }
+
+    public ResponseEntity<?> forgottenAccountVerification(String code,String userEmail) {
+        return SystemService.verifyVerificationCodeForAccountVerification(code,userEmail);
+    }
+
+
+//    public ResponseEntity<?> resetPassword(String email, String verificationCode, String newPassword) {
+//        User user = userRepository.findByEmail(email);
+//        if (user == null) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+//        }
+//
+//        // Verify the code and check if it's expired
+//        if (user.getVerificationCode() == null ||
+//                !user.getVerificationCode().equals(verificationCode) ||
+//                user.getVerificationCodeExpiry().before(new Date())) {
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired verification code");
+//        }
+//
+//        // Reset the password
+//        user.setPassword(newPassword);
+//        user.setVerificationCode(null); // Invalidate the code
+//        user.setVerificationCodeExpiry(null);
+//
+//        userRepository.save(user);
+//
+//        return ResponseEntity.ok("Password reset successfully.");
+//    }
+
+
+
+
+//    public ResponseEntity<?> forgotUserCredentials(String userEmail) {
+//        List<User> users =userRepository.findByUserEmail(userEmail);
+//        List<String> userNames=new ArrayList<>();
+//        for(User user:users){
+//            userNames.add(user.getUserName());
+//        }
+//        if(userNames.isEmpty()){
+//            ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User not found");
+//        }
+//        return ResponseEntity.ok(userNames);
+//    }
 }
