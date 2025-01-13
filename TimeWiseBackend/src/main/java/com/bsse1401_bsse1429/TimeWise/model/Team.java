@@ -15,66 +15,47 @@ public class Team {
     @Id
     private ObjectId teamId;
     private String teamName;
-    private String teamEmail;
     private String teamDescription;
-    private Set<String> teamMembers; // Letter on we may add team admins assigned by the team owner
-    private Set<String> invitedMembers;
-    private Set<String> membersRequestedForJoining;
-    private String teamOwner;
-    private Date creationDate;
-    private List<String> teamGoals;
-    private String teamVisibilityStatus;
-    private List<Chat> teamChat;
-    private List<TeamModification> teamModificationHistory;
+    private Set<String> teamMembers; // Members in the team
+    private Set<String> invitedMembers; // Members invited but not yet joined
+    private Set<String> requestedToJoinMembers;
+    private String teamOwner; // Owner of the team
+    private Date creationDate; // Team creation timestamp
+    private String teamVisibilityStatus; // e.g., Public or Private
+    private List<String> teamModificationHistories; // Simplified modification history as descriptive strings
+    private List<Chat> teamChat; // Team chat history
+    private Set<String> teamTasks; // List of team tasks
 
-    // Add a new member to the team
-    public void addTeamMember(String memberName, String updatedBy) {
-        if (this.teamMembers.contains(memberName)) {
-            throw new IllegalArgumentException("Member already exists in the team.");
+    // Add a member to the team
+    public void addTeamMember(String addedBy, String newMember) {
+        if (!teamOwner.equals(addedBy)) {
+            throw new IllegalArgumentException("Only the team owner can add members.");
         }
-        this.teamMembers.add(memberName);
-        this.logTeamModification("teamMembers", updatedBy, null, memberName);
+        if (teamMembers == null) {
+            teamMembers = new HashSet<>();
+        }
+        teamMembers.add(newMember);
+        logModification("Member added: " + newMember + " by " + addedBy);
     }
 
     // Remove a member from the team
-    public void removeTeamMember(String memberName, String updatedBy) {
-        if (!this.teamMembers.contains(memberName)) {
-            throw new IllegalArgumentException("Member does not exist in the team.");
+    public void removeTeamMember(String removedBy, String memberToRemove) {
+        if (!teamOwner.equals(removedBy)) {
+            throw new IllegalArgumentException("Only the team owner can remove members.");
         }
-        this.teamMembers.remove(memberName);
-        this.logTeamModification("teamMembers", updatedBy, memberName, null);
-    }
-
-    // Add a goal to the team
-    public void addTeamGoal(String goal, String updatedBy) {
-        this.teamGoals.add(goal);
-        this.logTeamModification("teamGoals", updatedBy, null, goal);
-    }
-
-    // Remove a goal from the team
-    public void removeTeamGoal(String goal, String updatedBy) {
-        if (!this.teamGoals.contains(goal)) {
-            throw new IllegalArgumentException("Goal does not exist in the team.");
+        if (teamMembers != null && teamMembers.contains(memberToRemove)) {
+            teamMembers.remove(memberToRemove);
+            logModification("Member removed: " + memberToRemove + " by " + removedBy);
+        } else {
+            throw new IllegalArgumentException("Member not found in the team.");
         }
-        this.teamGoals.remove(goal);
-        this.logTeamModification("teamGoals", updatedBy, goal, null);
     }
 
-    // Add a chat message
-    public void addChatMessage(String sender, String message) {
-        Chat chat = new Chat(new Date(), sender, message);
-        this.teamChat.add(chat);
-    }
-
-    // Update team visibility
-    public void updateVisibilityStatus(String updatedBy, String newVisibilityStatus) {
-        String previousValue = this.teamVisibilityStatus;
-        this.teamVisibilityStatus = newVisibilityStatus;
-        this.logTeamModification("teamVisibilityStatus", updatedBy, previousValue, newVisibilityStatus);
-    }
-
-    // Modify team attributes (generic)
-    public void modifyTeamAttribute(String fieldName, String updatedBy, Object newValue) {
+    // Update team details (name, description, visibility)
+    public void updateTeamDetails(String updatedBy, String fieldName, Object newValue) {
+        if (!teamOwner.equals(updatedBy)) {
+            throw new IllegalArgumentException("Only the team owner can update team details.");
+        }
         Object previousValue;
         switch (fieldName) {
             case "teamName":
@@ -85,23 +66,48 @@ public class Team {
                 previousValue = this.teamDescription;
                 this.teamDescription = (String) newValue;
                 break;
-            case "teamOwner":
-                previousValue = this.teamOwner;
-                this.teamOwner = (String) newValue;
+            case "teamVisibilityStatus":
+                previousValue = this.teamVisibilityStatus;
+                this.teamVisibilityStatus = (String) newValue;
                 break;
             default:
                 throw new IllegalArgumentException("Field name not recognized for modification.");
         }
-        this.logTeamModification(fieldName, updatedBy, previousValue, newValue);
+        logModification("Updated " + fieldName + " from " + previousValue + " to " + newValue + " by " + updatedBy);
     }
 
-    // Log team modification
-    private void logTeamModification(String fieldName, String updatedBy, Object previousValue, Object newValue) {
-        TeamModification modification = new TeamModification(new Date(), fieldName, updatedBy, previousValue, newValue);
-        this.teamModificationHistory.add(modification);
+    // Add a chat message (any member can add a chat)
+    public void addTeamChat(String sender, String message) {
+        if (teamMembers == null || !teamMembers.contains(sender)) {
+            throw new IllegalArgumentException("Only team members can send messages.");
+        }
+        if (teamChat == null) {
+            teamChat = new ArrayList<>();
+        }
+        teamChat.add(new Chat(new Date(), sender, message));
     }
 
-    // Inner class for Chat messages
+    // Add a task to the team
+    public void addTeamTask(String addedBy, String taskName) {
+        if (!teamOwner.equals(addedBy)) {
+            throw new IllegalArgumentException("Only the team owner can add tasks.");
+        }
+        if (teamTasks == null) {
+            teamTasks = new HashSet<>();
+        }
+        teamTasks.add(taskName);
+        logModification("Task added: " + taskName + " by " + addedBy);
+    }
+
+    // Log any modification to the team
+    private void logModification(String description) {
+        if (teamModificationHistories == null) {
+            teamModificationHistories = new ArrayList<>();
+        }
+        teamModificationHistories.add(new Date() + " - " + description);
+    }
+
+    // Inner class for chat
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -109,17 +115,5 @@ public class Team {
         private Date timestamp;
         private String sender;
         private String message;
-    }
-
-    // Inner class for Team Modifications
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class TeamModification {
-        private Date timestamp;
-        private String fieldName;
-        private String updatedBy;
-        private Object previousValue;
-        private Object newValue;
     }
 }

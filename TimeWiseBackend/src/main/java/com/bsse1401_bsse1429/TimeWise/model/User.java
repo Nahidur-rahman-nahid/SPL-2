@@ -4,8 +4,8 @@ import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 @Document
 @Data
@@ -21,7 +21,7 @@ public class User {
     private String role;
     private String userStatus; // active or inactive(logged out or manual inactive setting)
     private List<Todo> todos;
-    private List<String> usersFollowing;
+    private Set<String> usersFollowing;
 
 
     @Data

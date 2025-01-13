@@ -1,5 +1,6 @@
 package com.bsse1401_bsse1429.TimeWise.service;
 
+import com.bsse1401_bsse1429.TimeWise.engine.CollaborationEngine;
 import com.bsse1401_bsse1429.TimeWise.model.Task;
 import com.bsse1401_bsse1429.TimeWise.repository.TaskRepository;
 import com.bsse1401_bsse1429.TimeWise.utils.TaskDetailResponse;
@@ -25,64 +26,94 @@ public class TaskService {
     private JWTService jwtService;
 
     // Create a new task
-    public Task createTask(Task task) {
-
-        String userName=UserCredentials.getCurrentUsername();
-        Task dupplicateTask= taskRepository.findByTaskOwnerAndTaskName(userName,task.getTaskName());
-        if(dupplicateTask!=null){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You already have a task with that task name.");
+    public List<Task> createTask(List<Task> tasks) {
+        String  userName=UserCredentials.getCurrentUsername();
+        List<Task> userTasks=taskRepository.findByTaskOwner(userName);
+//        List<Task> userTasks=taskRepository.findByTaskOwner(userName);
+      List<String> userTasksNames=new ArrayList<>();
+      for(Task task:userTasks){
+          userTasksNames.add(task.getTaskName());
+      }
+//        for(Task task:tasks){
+//            userTasksNames.add(task.getTaskName());
+//        }
+        if(tasks.isEmpty()){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No tasks is passed");
         }
+        List<Task> validTasks=new ArrayList<>();
+        for(Task task:tasks) {
 
-        task.setTaskOwner(userName);
+            if (task.getTaskName() == null || task.getTaskGoal() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Task name and task goal can not be empty");
+            }
+            if(userTasksNames.contains(task.getTaskName())){
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You already have a task with that task name");
+            }
 
-        if (task.getTaskParticipants() == null) {
+            task.setTaskOwner(userName);
+
             task.setTaskParticipants(new HashSet<>());
-        }
-        task.getTaskParticipants().add(userName);
 
-        if (task.getTaskCreationDate() == null) {
-            task.setTaskCreationDate(new Date());
-        }
+            task.getTaskParticipants().add(userName);
 
-        if (task.getTaskDeadline() == null) {
-            // Convert to LocalDateTime, add 1 day, and convert back to Date
-            LocalDateTime creationDate = task.getTaskCreationDate()
-                    .toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDateTime();
-            LocalDateTime deadline = creationDate.plusDays(1); // Add 1 day
-            task.setTaskDeadline(Date.from(deadline.atZone(ZoneId.systemDefault()).toInstant()));
-        }
 
-        if (task.getTaskCategory() == null || task.getTaskCategory().isEmpty()) {
-            task.setTaskCategory("General");
-        }
-        if (task.getTaskDescription() == null || task.getTaskDescription().isEmpty()) {
-            task.setTaskDescription("");
-        }
-        if (task.getTaskPriority() == null || task.getTaskPriority().isEmpty()) {
-            task.setTaskPriority("Medium");
-        }
-        if (task.getTaskVisibilityStatus() == null || task.getTaskVisibilityStatus().isEmpty()) {
-            task.setTaskVisibilityStatus("Private");
-        }
-        if (task.getTaskGoal() == null || task.getTaskGoal().isEmpty()) {
-            task.setTaskGoal("General");
-        }
-        if (task.getTaskComments() == null) {
-            task.setTaskComments(new ArrayList<>());
-        }
-        if (task.getTaskNotes() == null) {
-            task.setTaskNotes(new TreeMap<>());
-        }
-        if (task.getTaskCurrentProgress() == null) {
-            task.setTaskCurrentProgress(0);
-        }
-        if (task.getTaskModificationHistory() == null) {
-            task.setTaskModificationHistory(new ArrayList<>());
-        }
+                task.setInvitedMembers(new HashSet<>());
 
-        return taskRepository.save(task);
+
+
+                task.setTaskCreationDate(new Date());
+
+
+            if (task.getTaskDeadline() == null) {
+                // Convert to LocalDateTime, add 1 day, and convert back to Date
+                LocalDateTime creationDate = task.getTaskCreationDate()
+                        .toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDateTime();
+                LocalDateTime deadline = creationDate.plusDays(1); // Add 1 day
+                task.setTaskDeadline(Date.from(deadline.atZone(ZoneId.systemDefault()).toInstant()));
+            }
+
+            if (task.getTaskCategory() == null || task.getTaskCategory().isEmpty()) {
+                task.setTaskCategory("General");
+            }
+            if (task.getTaskDescription() == null || task.getTaskDescription().isEmpty()) {
+                task.setTaskDescription("No task description added");
+            }
+            if (task.getTaskPriority() == null || task.getTaskPriority().isEmpty()) {
+                task.setTaskPriority("Medium");
+            }
+            if (task.getTaskVisibilityStatus() == null || task.getTaskVisibilityStatus().isEmpty()) {
+                task.setTaskVisibilityStatus("Public");
+            }
+            if (task.getTaskGoal() == null || task.getTaskGoal().isEmpty()) {
+                task.setTaskGoal("General");
+            }
+
+                task.setInvitedMembers(new HashSet<>());
+
+
+                task.setTaskComments(new ArrayList<>());
+
+
+                task.setTaskNotes(new TreeMap<>());
+
+
+                task.setTaskTodos(new ArrayList<>());
+
+
+                task.setTaskCurrentProgress(0);
+
+                task.setTaskModificationHistory(new ArrayList<>());
+
+
+            validTasks.add(task);
+        }
+        if(validTasks.size()==tasks.size()) {
+            taskRepository.saveAll(tasks);
+            return tasks;
+        }
+        return null;
     }
 
     // Generate a task using AI
@@ -93,7 +124,10 @@ public class TaskService {
     // Add a comment to a task
     public Task addTaskComment(ObjectId taskId, String commentText) {
         String  userName=UserCredentials.getCurrentUsername();
-        Task task = getTaskById(taskId);
+        Task task = taskRepository.findByTaskId(taskId);
+        if(task==null){
+            return null;
+        }
         if(task.getTaskParticipants().contains(userName)) {
             task.addTaskComment(userName, commentText);
             return taskRepository.save(task);
@@ -105,7 +139,10 @@ public class TaskService {
     // Add a Note to a task
     public Task addTaskNote(ObjectId taskId, String noteText) {
         String  userName=UserCredentials.getCurrentUsername();
-        Task task = getTaskById(taskId);
+        Task task = taskRepository.findByTaskId(taskId);
+        if(task==null){
+            return null;
+        }
         if(task.getTaskParticipants().contains(userName)) {
             task.addTaskNote(userName, noteText);
             return taskRepository.save(task);
@@ -114,15 +151,36 @@ public class TaskService {
             return null;
         }
     }
+    // Add a Note to a task
+    public Task addTaskTodo(ObjectId taskId, String todoDescription) {
+        String  userName=UserCredentials.getCurrentUsername();
+        Task task = taskRepository.findByTaskId(taskId);
+        if(task==null){
+            return null;
+        }
+        if(task.getTaskOwner().equals(userName)) {
+            task.addTaskTodo(userName, todoDescription);
+            return taskRepository.save(task);
+        }
+        else{
+            return null;
+        }
+    }
     // Modify a task attribute
     public Task modifyTaskAttribute(ObjectId taskId, String fieldName, Object newValue) {
+        if(fieldName==null){
+            return null;
+        }
         String updatedBy =UserCredentials.getCurrentUsername();
-        Task task = getTaskById(taskId);
+        Task task = taskRepository.findByTaskId(taskId);
+        if(task==null){
+            return null;
+        }
         if(fieldName.equals("taskCurrentProgress") && task.getTaskParticipants().contains(updatedBy)){
             task.updateTaskProgress(updatedBy,newValue);
             return taskRepository.save(task);
         }
-        else if(!fieldName.equals("taskCurrentProgress") && task.getTaskOwner().equals(updatedBy)){
+        else if(task.getTaskOwner().equals(updatedBy)){
             task.modifyTaskAttribute(fieldName,updatedBy, newValue);
             return taskRepository.save(task);
         }
@@ -133,25 +191,13 @@ public class TaskService {
     }
 
     // Delete a task by ID
-    public void deleteTask(ObjectId taskId) {
+    public String deleteTask(String taskName) {
         String  userName=UserCredentials.getCurrentUsername();
-        Task task = getTaskById(taskId);
-        if (task == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found with ID: " + taskId);
-        } else if (!task.getTaskOwner().equals(userName)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You are not the owner of the owner of this task");
-        }
-        taskRepository.deleteById(taskId);
+        String response=CollaborationEngine.removeDeletedTaskFromTeams(taskName,userName);
+        taskRepository.deleteByTaskOwnerAndTaskName(userName,taskName);
+        return response;
     }
 
-    // Get a task by ID
-    private Task getTaskById(ObjectId taskId) {
-        Optional<Task> taskOptional = taskRepository.findById(taskId);
-        if (taskOptional.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found with ID: " + taskId);
-        }
-        return taskOptional.get();
-    }
 
     // Get all tasks of a User
     public List<Task> getAllTasksOfAnUser() {

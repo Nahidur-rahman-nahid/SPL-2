@@ -24,7 +24,6 @@ public  class UserDetailResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class UserTasks {
-        private ObjectId taskId;
         private String taskName;
         private String taskCategory;
         private String taskDescription;
@@ -35,7 +34,7 @@ public  class UserDetailResponse {
     @AllArgsConstructor
     public static class UserTeams {
         private String teamName;
-        private String teamEmail;
+        private String teamOwner;
         private String teamDescription;
     }
 }

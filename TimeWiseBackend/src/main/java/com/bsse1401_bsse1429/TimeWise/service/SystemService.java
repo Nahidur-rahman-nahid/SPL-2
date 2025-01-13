@@ -8,6 +8,7 @@ import com.bsse1401_bsse1429.TimeWise.repository.TeamRepository;
 import com.bsse1401_bsse1429.TimeWise.repository.TaskRepository;
 import com.bsse1401_bsse1429.TimeWise.repository.VerificationCodeRepository;
 import com.bsse1401_bsse1429.TimeWise.utils.UserDetailResponse;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,36 +20,48 @@ import org.springframework.stereotype.Service;
 import com.bsse1401_bsse1429.TimeWise.model.User;
 import com.bsse1401_bsse1429.TimeWise.utils.VerificationCode;
 
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.Date;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class SystemService {
 
     @Autowired
+    private JWTService jwtServiceInstance;
+
+    @Autowired
+    private AuthenticationManager authManagerInstance;
+
+    @Autowired
+    private UserRepository userRepositoryInstance;
+
+    @Autowired
+    private TaskRepository taskRepositoryInstance;
+
+    @Autowired
+    private TeamRepository teamRepositoryInstance;
+
+    @Autowired
+    private VerificationCodeRepository verificationCodeRepositoryInstance;
+
     private static JWTService jwtService;
-
-    @Autowired
     private static AuthenticationManager authManager;
-
-    @Autowired
     private static UserRepository userRepository;
-
-    @Autowired
     private static TaskRepository taskRepository;
-
-    @Autowired
     private static TeamRepository teamRepository;
-
-
-    @Autowired
     private static VerificationCodeRepository verificationCodeRepository;
 
     private static final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
+    @PostConstruct
+    private void initStaticDependencies() {
+        jwtService = jwtServiceInstance;
+        authManager = authManagerInstance;
+        userRepository = userRepositoryInstance;
+        taskRepository = taskRepositoryInstance;
+        teamRepository = teamRepositoryInstance;
+        verificationCodeRepository = verificationCodeRepositoryInstance;
+    }
     public static ResponseEntity<?> checkRegistrationCredentialsAndSendRegistrationVerificationCode(User user) {
         // Check if username or email already exists
         if (userRepository.findByUserName(user.getUserName())!=null) {
@@ -64,20 +77,8 @@ public class SystemService {
         // Save verification code
         verificationCodeRepository.save(verificationCode);
 
-        // Send the verification email
-        Notification notification = new Notification(
-                null,
-                "System",
-                Set.of(user.getUserEmail()),
-                "TimeWise Registration Verification Code",
-                "Your TimeWise account registration verification code is: " + verificationCode.getCode() + ". It expires in 7 minutes.",
-                "Unseen",
-                null,
-                new Date()
-        );
-        CollaborationEngine.sendEmail(notification);
 
-        return ResponseEntity.ok("Verification code sent to your email.");
+        return ResponseEntity.ok(CollaborationEngine.sendUserRegistrationVerificationCode(user.getUserName(),user.getUserEmail(),verificationCode.getCode()));
     }
 
     public static ResponseEntity<?> verifyVerificationCodeAndCompleteRegistration(User user, String code) {
@@ -116,7 +117,20 @@ public class SystemService {
         String rawPassword = user.getPassword();
 
         user.setPassword(encoder.encode(rawPassword));
+        user.setUserStatus("Active");
+        user.setTodos(new ArrayList<>());
+        user.setUsersFollowing(new HashSet<>());
+        if(user.getRole()==null){
+            user.setRole("User");
+        }
+        if(user.getShortBioData()==null){
+            user.setShortBioData("Myself "+user.getUserName());
+        }
+
         userRepository.save(user);
+
+
+        String response = CollaborationEngine.sendRegistrationSuccessfulMessage(user.getUserName(),user.getUserEmail());
 
         // Log saved data
         System.out.println("User saved: " + user);
@@ -125,7 +139,6 @@ public class SystemService {
         user.setPassword(rawPassword); // Reset raw password for login
 
         return performUserLogin(user);
-
     }
 
     public static ResponseEntity<?> performUserLogin(User user) {
@@ -165,20 +178,9 @@ public class SystemService {
         // Save verification code
         verificationCodeRepository.save(verificationCode);
 
-        // Send the verification email
-        Notification notification = new Notification(
-                null,
-                "System",
-                Set.of(userEmail),
-                "TimeWise Account Verification Code",
-                "Your TimeWise account verification code is: " + verificationCode.getCode() + ". It expires in 7 minutes.",
-                "Unseen",
-                null,
-                new Date()
-        );
-        CollaborationEngine.sendEmail(notification);
+        String response=CollaborationEngine.sendAccountVerificationCode(userEmail,verificationCode.getCode());
 
-        return ResponseEntity.ok("Verification code sent to your email.");
+        return ResponseEntity.ok(response);
 
     }
     public static ResponseEntity<?> verifyVerificationCodeForAccountVerification(String code,String userEmail) {
@@ -231,7 +233,6 @@ public class SystemService {
                             task.getTaskParticipants().contains(userName) ||
                                     "public".equalsIgnoreCase(task.getTaskVisibilityStatus()))
                     .map(task -> new UserDetailResponse.UserTasks(
-                            task.getTaskId(),
                             task.getTaskName(),
                             task.getTaskCategory(),
                             task.getTaskDescription()
@@ -246,7 +247,7 @@ public class SystemService {
                                     "public".equalsIgnoreCase(team.getTeamVisibilityStatus()))
                     .map(team -> new UserDetailResponse.UserTeams(
                             team.getTeamName(),
-                            team.getTeamEmail(),
+                            team.getTeamOwner(),
                             team.getTeamDescription()
                     ))
                     .collect(Collectors.toList());

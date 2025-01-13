@@ -1,9 +1,8 @@
 package com.bsse1401_bsse1429.TimeWise.service;
 
+import com.bsse1401_bsse1429.TimeWise.engine.CollaborationEngine;
 import com.bsse1401_bsse1429.TimeWise.model.Team;
-import com.bsse1401_bsse1429.TimeWise.model.Notification;
 import com.bsse1401_bsse1429.TimeWise.repository.TeamRepository;
-//import com.bsse1401_bsse1429.TimeWise.repository.NotificationRepository;
 import com.bsse1401_bsse1429.TimeWise.utils.TeamDetailResponse;
 import com.bsse1401_bsse1429.TimeWise.utils.UserCredentials;
 import org.bson.types.ObjectId;
@@ -21,8 +20,6 @@ public class TeamService {
     @Autowired
     private TeamRepository teamRepository;
 
-//    @Autowired
-//    private NotificationRepository notificationRepository;
 
     public Team createTeam(Team team) {
         String  createdBy= UserCredentials.getCurrentUsername();
@@ -36,35 +33,37 @@ public class TeamService {
             team.setTeamDescription("This is a team created by " + createdBy);
         }
 
-        if (team.getTeamMembers() == null) {
+
             team.setTeamMembers(new HashSet<>());
-        }
+
         team.getTeamMembers().add(createdBy);
 
-        if (team.getCreationDate() == null) {
-            team.setCreationDate(new Date());
-        }
 
-        if (team.getTeamGoals() == null) {
-            team.setTeamGoals(new ArrayList<>());
-        }
+            team.setInvitedMembers(new HashSet<>());
+
+
+
+            team.setRequestedToJoinMembers(new HashSet<>());
+
+
+
+            team.setCreationDate(new Date());
+
+
 
         if (team.getTeamVisibilityStatus() == null || team.getTeamVisibilityStatus().isEmpty()) {
-            team.setTeamVisibilityStatus("Private");
+            team.setTeamVisibilityStatus("Public");
         }
+        team.setTeamModificationHistories(new ArrayList<>());
 
-        if (team.getTeamChat() == null) {
             team.setTeamChat(new ArrayList<>());
-        }
 
-        if (team.getTeamModificationHistory() == null) {
-            team.setTeamModificationHistory(new ArrayList<>());
-        }
+
+
+            team.setTeamTasks(new HashSet<>());
 
         return teamRepository.save(team);
     }
-
-
 
     public List<Team> getTeamsForUser() {
         String  userName=UserCredentials.getCurrentUsername();
@@ -90,7 +89,6 @@ public class TeamService {
             // Map only the required fields to a new DTO object
             TeamDetailResponse teamResponse = new TeamDetailResponse(
                     team.getTeamName(),
-                    team.getTeamEmail(),
                     team.getTeamDescription(),
                     team.getTeamMembers(),
                     team.getTeamOwner(),
@@ -102,4 +100,25 @@ public class TeamService {
 
     }
 
+    public String addTaskToTeam(String teamName, String taskName) {
+        String  userName=UserCredentials.getCurrentUsername();
+       return CollaborationEngine.addTaskToTeam(userName,teamName,taskName);
+
+    }
+
+    public String removeTaskFromTeam(String teamName, ObjectId taskId) {
+        String  userName=UserCredentials.getCurrentUsername();
+        return CollaborationEngine.removeTaskFromTeam(userName,teamName,taskId);
+    }
+
+    public Object removeMemberFromTeam(String teamName, String userName) {
+        String  teamOwner=UserCredentials.getCurrentUsername();
+        return CollaborationEngine.removeMemberFromTeam(teamOwner,teamName,userName);
+    }
+
+    public String leaveTeam(String teamName) {
+        String  userName=UserCredentials.getCurrentUsername();
+        return CollaborationEngine.leaveTeam(teamName,userName);
+
+    }
 }

@@ -12,7 +12,6 @@ import java.util.Set;
 @AllArgsConstructor
     public  class TeamDetailResponse {
         private String teamName;
-        private String teamEmail;
         private String teamDescription;
         private Set<String> teamMembers;
         private String teamOwner;

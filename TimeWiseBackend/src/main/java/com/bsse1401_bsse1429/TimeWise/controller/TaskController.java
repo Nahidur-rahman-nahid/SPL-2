@@ -3,6 +3,7 @@ package com.bsse1401_bsse1429.TimeWise.controller;
 import com.bsse1401_bsse1429.TimeWise.model.Task;
 import com.bsse1401_bsse1429.TimeWise.utils.AddTaskCommentRequestBody;
 import com.bsse1401_bsse1429.TimeWise.utils.AddTaskNoteRequestBody;
+import com.bsse1401_bsse1429.TimeWise.utils.AddTaskTodoRequestBody;
 import com.bsse1401_bsse1429.TimeWise.utils.TaskModificationRequestBody;
 import com.bsse1401_bsse1429.TimeWise.service.TaskService;
 import org.bson.types.ObjectId;
@@ -23,9 +24,9 @@ public class TaskController {
 
     // Create Task
     @PostMapping("/create")
-    public ResponseEntity<Task> createTask(@RequestBody Task task) {
-        Task createdTask = taskService.createTask(task);
-        return ResponseEntity.ok(createdTask);
+    public ResponseEntity<?> createTask(@RequestBody List<Task> tasks) {
+        List<Task> createdTasks = taskService.createTask(tasks);
+        return ResponseEntity.ok(createdTasks);
     }
 
     // Get all tasks of a User
@@ -62,10 +63,9 @@ public class TaskController {
 
     // Delete Task
     @PostMapping("/delete")
-    public ResponseEntity<Void> deleteTask(@RequestBody ObjectId taskId) {
+    public ResponseEntity<?> deleteTask(@RequestBody String taskName) {
 
-        taskService.deleteTask(taskId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(taskService.deleteTask(taskName));
     }
 
     // Add Task Comment
@@ -82,6 +82,16 @@ public class TaskController {
     @PostMapping("/add/note")
     public ResponseEntity<Task> addTaskNote(@RequestBody AddTaskNoteRequestBody addTaskNoteRequestBody) {
         Task updatedTask = taskService.addTaskNote(addTaskNoteRequestBody.getTaskId(), addTaskNoteRequestBody.getTaskNote());
+        if (updatedTask != null) {
+            return ResponseEntity.ok(updatedTask);
+        }
+        return ResponseEntity.badRequest().body(null);
+    }
+
+    // Add Task To Do
+    @PostMapping("/add/todo")
+    public ResponseEntity<Task> addTaskTodo(@RequestBody AddTaskTodoRequestBody addTaskTodoRequestBody) {
+        Task updatedTask = taskService.addTaskTodo(addTaskTodoRequestBody.getTaskId(), addTaskTodoRequestBody.getTaskTodo());
         if (updatedTask != null) {
             return ResponseEntity.ok(updatedTask);
         }

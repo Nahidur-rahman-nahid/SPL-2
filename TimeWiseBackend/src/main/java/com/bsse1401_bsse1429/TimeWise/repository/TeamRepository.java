@@ -17,4 +17,6 @@ public interface TeamRepository extends MongoRepository<Team, ObjectId> {
     List<Team> findByTeamOwner(String userName);
 
     Team findByTeamNameAndTeamOwner(String entityNameRelatedToNotification, String invitedBy);
+
+    List<Team> findByTeamOwnerAndTeamTasksContaining(String teamOwner,String taskName);
 }

@@ -3,6 +3,7 @@ package com.bsse1401_bsse1429.TimeWise.model;
 import lombok.*;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.text.ParseException;
@@ -23,16 +24,17 @@ public class Task {
     private String taskVisibilityStatus;
     private Date taskCreationDate;
     private Date taskDeadline;
-    private String taskOwner;
+    private String taskOwner; // The user who owns the task
     private String taskGoal;
-    private Set<String> taskParticipants; // Letter on we may add task admins assigned by the task owner
+    private Set<String> taskParticipants;
     private Set<String> invitedMembers;
-    private Set<String> membersRequestedForJoining;
     private List<Comment> taskComments;
     private TreeMap<String, List<Note>> taskNotes;
-    private Integer taskCurrentProgress; // 0 / 25 / 50 / 75 / 100
+    private Integer taskCurrentProgress;
     private List<TaskModification> taskModificationHistory;
     private List<TaskTodo> taskTodos;
+
+
 
     // Method to update progress with validation, now using modifyTaskAttribute
     public void updateTaskProgress(String updatedBy, Object newProgress) {
@@ -51,11 +53,12 @@ public class Task {
         this.taskNotes.computeIfAbsent(userName, k -> new ArrayList<>()).add(note);
     }
 
-    public void modifyTaskAttribute(String fieldName, String updatedBy, Object newValue) {
-        if (fieldName == null || updatedBy == null || newValue == null) {
-            throw new IllegalArgumentException("Field name, updatedBy, and newValue cannot be null.");
-        }
+    public void addTaskTodo(String userName, String description) {
+        TaskTodo taskTodo = new TaskTodo(new Date(), description,"Incomplete");
+        this.taskTodos.add(taskTodo);
+    }
 
+    public void modifyTaskAttribute(String fieldName, String updatedBy, Object newValue) {
         Object previousValue;
         switch (fieldName) {
             case "taskCurrentProgress":
@@ -127,7 +130,7 @@ public class Task {
         }
 
         // Log the modification
-        TaskModification modification = new TaskModification(new Date(), fieldName, updatedBy, previousValue, this.taskCurrentProgress);
+        TaskModification modification = new TaskModification(new Date(), fieldName, updatedBy, previousValue, newValue);
         this.taskModificationHistory.add(modification);
     }
 
@@ -168,6 +171,7 @@ public class Task {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TaskTodo {
+        private Date timestamp;
         private String description;
         private String status; // complete or incomplete
     }
