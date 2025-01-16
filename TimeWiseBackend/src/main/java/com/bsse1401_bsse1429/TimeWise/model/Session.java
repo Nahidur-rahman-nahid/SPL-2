@@ -9,12 +9,13 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 @Document
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-class Session {
+public class Session {
     @Id
     private ObjectId sessionId;
     private String sessionCreator;
@@ -22,5 +23,6 @@ class Session {
     private Double duration;
     private String sessionGoal;
     private String sessionSummary;
-    private ObjectId taskOperated;
+    private Integer sessionEfficiency;
+    private Set<String> tasksOperated;
 }
