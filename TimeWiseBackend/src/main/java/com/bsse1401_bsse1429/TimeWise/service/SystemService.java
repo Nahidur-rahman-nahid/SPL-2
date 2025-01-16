@@ -1,12 +1,10 @@
 package com.bsse1401_bsse1429.TimeWise.service;
 
-import ch.qos.logback.classic.encoder.JsonEncoder;
 import com.bsse1401_bsse1429.TimeWise.engine.CollaborationEngine;
-import com.bsse1401_bsse1429.TimeWise.model.Notification;
 import com.bsse1401_bsse1429.TimeWise.repository.UserRepository;
 import com.bsse1401_bsse1429.TimeWise.repository.TeamRepository;
 import com.bsse1401_bsse1429.TimeWise.repository.TaskRepository;
-import com.bsse1401_bsse1429.TimeWise.repository.VerificationCodeRepository;
+import com.bsse1401_bsse1429.TimeWise.repository.UserVerificationMessageRepository;
 import com.bsse1401_bsse1429.TimeWise.utils.UserDetailResponse;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.bsse1401_bsse1429.TimeWise.model.User;
-import com.bsse1401_bsse1429.TimeWise.utils.VerificationCode;
+import com.bsse1401_bsse1429.TimeWise.utils.UserVerificationMessage;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -42,14 +40,14 @@ public class SystemService {
     private TeamRepository teamRepositoryInstance;
 
     @Autowired
-    private VerificationCodeRepository verificationCodeRepositoryInstance;
+    private UserVerificationMessageRepository userVerificationMessageRepositoryInstance;
 
     private static JWTService jwtService;
     private static AuthenticationManager authManager;
     private static UserRepository userRepository;
     private static TaskRepository taskRepository;
     private static TeamRepository teamRepository;
-    private static VerificationCodeRepository verificationCodeRepository;
+    private static UserVerificationMessageRepository userVerificationMessageRepository;
 
     private static final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
@@ -60,7 +58,7 @@ public class SystemService {
         userRepository = userRepositoryInstance;
         taskRepository = taskRepositoryInstance;
         teamRepository = teamRepositoryInstance;
-        verificationCodeRepository = verificationCodeRepositoryInstance;
+        userVerificationMessageRepository = userVerificationMessageRepositoryInstance;
     }
     public static ResponseEntity<?> checkRegistrationCredentialsAndSendRegistrationVerificationCode(User user) {
         // Check if username or email already exists
@@ -72,10 +70,10 @@ public class SystemService {
 //        }
 
         // Generate a verification code
-        VerificationCode verificationCode=generateVerificationCode(user);
-        verificationCodeRepository.deleteByUserNameOrUserEmail(user.getUserName(),user.getUserEmail());
+        UserVerificationMessage verificationCode=generateVerificationCode(user);
+        userVerificationMessageRepository.deleteByUserNameOrUserEmail(user.getUserName(),user.getUserEmail());
         // Save verification code
-        verificationCodeRepository.save(verificationCode);
+        userVerificationMessageRepository.save(verificationCode);
 
 
         return ResponseEntity.ok(CollaborationEngine.sendUserRegistrationVerificationCode(user.getUserName(),user.getUserEmail(),verificationCode.getCode()));
@@ -83,16 +81,16 @@ public class SystemService {
 
     public static ResponseEntity<?> verifyVerificationCodeAndCompleteRegistration(User user, String code) {
         // Check if the verification code is valid and not expired
-        VerificationCode verificationCode = verificationCodeRepository.findByUserEmail(user.getUserEmail());
+        UserVerificationMessage verificationCode = userVerificationMessageRepository.findByUserEmail(user.getUserEmail());
         if (verificationCode == null ) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No verification code found for this email");
         }
         if(verificationCode.getExpiry().before(new Date())){
-            verificationCodeRepository.delete(verificationCode);
+            userVerificationMessageRepository.delete(verificationCode);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Expired verification code.");
         }
         if(!verificationCode.getCode().equals(code)){
-            verificationCodeRepository.delete(verificationCode);
+            userVerificationMessageRepository.delete(verificationCode);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Wrong verification code.Previous code became useless. Ask for new code if required. ");
         }
 
@@ -103,7 +101,7 @@ public class SystemService {
 
         // Check if username or email already exists (revalidation)
         if (userRepository.findByUserName(user.getUserName())!=null) {
-            verificationCodeRepository.delete(verificationCode);
+            userVerificationMessageRepository.delete(verificationCode);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Sorry you have to register again with another name as in the mean time a new user with that user name registered");
         }
 //        if (userRepository.existsByEmail(user.getEmail())) {
@@ -112,7 +110,7 @@ public class SystemService {
 
 
         // Remove the verification code from the database
-        verificationCodeRepository.delete(verificationCode);
+        userVerificationMessageRepository.delete(verificationCode);
         // Save the user in the database
         String rawPassword = user.getPassword();
 
@@ -172,11 +170,11 @@ public class SystemService {
         String code = UUID.randomUUID().toString().substring(0, 6).toUpperCase(); // Generate a 6-character code
 
         // Generate a verification code
-        VerificationCode verificationCode=new VerificationCode(code,"User",userEmail,new Date(System.currentTimeMillis() + (7 * 60 * 1000)));
+        UserVerificationMessage verificationCode=new UserVerificationMessage(code,"User",userEmail,new Date(System.currentTimeMillis() + (7 * 60 * 1000)));
 
-        verificationCodeRepository.deleteByUserEmail(userEmail);
+        userVerificationMessageRepository.deleteByUserEmail(userEmail);
         // Save verification code
-        verificationCodeRepository.save(verificationCode);
+        userVerificationMessageRepository.save(verificationCode);
 
         String response=CollaborationEngine.sendAccountVerificationCode(userEmail,verificationCode.getCode());
 
@@ -185,27 +183,27 @@ public class SystemService {
     }
     public static ResponseEntity<?> verifyVerificationCodeForAccountVerification(String code,String userEmail) {
         // Check if the verification code is valid and not expired
-        VerificationCode verificationCode = verificationCodeRepository.findByUserEmail(userEmail);
+        UserVerificationMessage verificationCode = userVerificationMessageRepository.findByUserEmail(userEmail);
         if (verificationCode == null ) {
 
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No verification code found for this email");
         }
         if(verificationCode.getExpiry().before(new Date())){
-            verificationCodeRepository.delete(verificationCode);
+            userVerificationMessageRepository.delete(verificationCode);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Expired verification code.");
         }
         if(!verificationCode.getCode().equals(code)){
-            verificationCodeRepository.delete(verificationCode);
+            userVerificationMessageRepository.delete(verificationCode);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Wrong verification code.Previous code became useless. Ask for new code if required. ");
         }
         return ResponseEntity.ok(userRepository.findByUserEmail(userEmail));
 
     }
 
-    private static VerificationCode generateVerificationCode(User user) {
+    private static UserVerificationMessage generateVerificationCode(User user) {
         String code = UUID.randomUUID().toString().substring(0, 6).toUpperCase(); // Generate a 6-character code
 
-        return new VerificationCode(
+        return new UserVerificationMessage(
                 code,
                 user.getUserName(),
                 user.getUserEmail(),
