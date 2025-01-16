@@ -3,7 +3,9 @@ package com.bsse1401_bsse1429.TimeWise.engine;
 import com.bsse1401_bsse1429.TimeWise.model.Feedback;
 import com.bsse1401_bsse1429.TimeWise.model.Session;
 import com.bsse1401_bsse1429.TimeWise.model.Task;
+import com.bsse1401_bsse1429.TimeWise.model.User;
 import com.bsse1401_bsse1429.TimeWise.repository.*;
+import com.bsse1401_bsse1429.TimeWise.utils.UsersAccountStatistics;
 import com.bsse1401_bsse1429.TimeWise.utils.UsersFeedbackStatistics;
 import com.bsse1401_bsse1429.TimeWise.utils.UsersSessionStatistics;
 import com.bsse1401_bsse1429.TimeWise.utils.UsersTaskStatistics;
@@ -33,6 +35,9 @@ public class StatisticsEngine {
     private FeedbackRepository feedbackRepositoryInstance;
 
     @Autowired
+    private MessageRepository messageRepositoryInstance;
+
+    @Autowired
     private ProgressReportRepository progressReportRepositoryInstance;
 
     private static UserRepository userRepository;
@@ -40,6 +45,7 @@ public class StatisticsEngine {
     private static TaskRepository taskRepository;
     private static SessionRepository sessionRepository;
     private static FeedbackRepository feedbackRepository ;
+    private static MessageRepository messageRepository ;
     private static ProgressReportRepository progressReportRepository;
 
     @PostConstruct
@@ -50,6 +56,7 @@ public class StatisticsEngine {
         sessionRepository=sessionRepositoryInstance;
         progressReportRepository=progressReportRepositoryInstance;
         feedbackRepository=feedbackRepositoryInstance;
+        messageRepository=messageRepositoryInstance;
     }
 
     public static UsersTaskStatistics calculateTaskStatistics(String userName) {
@@ -127,6 +134,47 @@ public class StatisticsEngine {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.DAY_OF_YEAR, -numberOfDays);
         return calendar.getTime();
+    }
+
+    public static UsersAccountStatistics calculateUserAccountStatistics(String userName) {
+        // Fetch the user by username
+        User user = userRepository.findByUserName(userName);
+        if (user == null) {
+            throw new IllegalArgumentException("User not found for username: " + userName);
+        }
+
+        // Calculate the number of users the user is following
+        Long numberOfUserFollowing = user.getUsersFollowing() != null ? (long) user.getUsersFollowing().size() : 0;
+
+        // Calculate the number of teams the user is participating in
+        Long teamsParticipated = teamRepository.countByTeamMembersContains(userName);
+
+        // Calculate the number of tasks the user has participated in
+        Long numberOfTasksParticipated = taskRepository.countByTaskParticipantsContains(userName);
+
+        // Calculate the number of sessions created by the user
+        Long numberOfSessionsCreated = sessionRepository.countBySessionCreator(userName);
+
+        // Fetch feedback scores
+        List<Feedback> feedbacks = feedbackRepository.findByFeedbackRecipientsContains(userName);
+        List<Integer> previousFeedbackScores = new ArrayList<>();
+        for (Feedback feedback : feedbacks) {
+            previousFeedbackScores.add( feedback.getFeedbackScore());
+        }
+
+        // Count messages sent and received (this assumes you have repositories to track messages)
+        Long numberOfMessagesSent = messageRepository.countBySender(userName); // Example usage
+        Long numberOfMessagesReceived = messageRepository.countByRecipientsContains(userName);
+
+        return new UsersAccountStatistics(
+                numberOfUserFollowing,
+                teamsParticipated,
+                numberOfTasksParticipated,
+                numberOfSessionsCreated,
+                previousFeedbackScores,
+                numberOfMessagesSent,
+                numberOfMessagesReceived
+        );
     }
 
 
