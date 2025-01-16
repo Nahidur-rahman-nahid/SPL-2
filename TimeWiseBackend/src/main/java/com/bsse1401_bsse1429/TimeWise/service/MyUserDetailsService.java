@@ -1,6 +1,6 @@
 package com.bsse1401_bsse1429.TimeWise.service;
 
-import com.bsse1401_bsse1429.TimeWise.model.UserPrincipal;
+import com.bsse1401_bsse1429.TimeWise.utils.UserPrincipal;
 import com.bsse1401_bsse1429.TimeWise.model.User;
 import com.bsse1401_bsse1429.TimeWise.repository.UserRepository;
 import org.bson.types.ObjectId;

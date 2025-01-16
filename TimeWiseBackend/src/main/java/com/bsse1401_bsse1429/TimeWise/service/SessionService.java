@@ -4,6 +4,7 @@ import com.bsse1401_bsse1429.TimeWise.model.Session;
 import com.bsse1401_bsse1429.TimeWise.repository.SessionRepository;
 import com.bsse1401_bsse1429.TimeWise.utils.UserCredentials;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -14,7 +15,8 @@ import java.util.NoSuchElementException;
 @RequiredArgsConstructor
 public class SessionService {
 
-    private final SessionRepository sessionRepository;
+    @Autowired
+    private SessionRepository sessionRepository;
 
     // Create a new session
     public Session createSession(Session session) {

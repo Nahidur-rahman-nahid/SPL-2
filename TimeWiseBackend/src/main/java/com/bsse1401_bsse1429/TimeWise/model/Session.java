@@ -20,9 +20,9 @@ public class Session {
     private ObjectId sessionId;
     private String sessionCreator;
     private Date sessionTimeStamp;
-    private Double duration;
+    private Integer duration;
     private String sessionGoal;
-    private String sessionSummary;
+    private String sessionOutcome;
     private Integer sessionEfficiency;
     private Set<String> tasksOperated;
 }

@@ -1,7 +1,5 @@
 package com.bsse1401_bsse1429.TimeWise.utils;
 
-import com.bsse1401_bsse1429.TimeWise.model.UserPrincipal;
-import org.bson.types.ObjectId;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 

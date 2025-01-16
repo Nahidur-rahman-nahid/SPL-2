@@ -10,4 +10,6 @@ public interface SessionRepository extends MongoRepository<Session, ObjectId> {
     Session findBySessionId(String id);
 
     List<Session> findBySessionCreator(String creator);
+
+    Long countBySessionCreator(String userName);
 }
