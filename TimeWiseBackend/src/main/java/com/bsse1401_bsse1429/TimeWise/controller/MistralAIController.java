@@ -10,12 +10,12 @@ import java.util.Map;
 
 @AllArgsConstructor
 @RestController
-@RequestMapping("/api/ai")
+@RequestMapping("/api/ai/mistral")
 public class MistralAIController {
 
     private final MistralAIService mistralAIService;
 
-    @PostMapping("/generatetasks")
+    @PostMapping("/generate/tasks")
     public Map<String, Object> generateTasks(@RequestBody GenerateTaskRequestBody requestBody) {
         // Format the final deadline and current date for prompt
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -26,8 +26,8 @@ public class MistralAIController {
         String prompt = String.format(
                 "You are an AI assistant helping with goal planning. The goal is '%s'. Create a list of tasks to achieve this goal. Each task must include: "
                         + "taskName, taskCategory, taskDescription, taskPriority (low, medium, high), "
-                        + "taskVisibilityStatus (public/private), and taskDeadline. Ensure task deadlines start from '%s' and do not exceed '%s'. "
-                        + "Respond in JSON format as a list of task objects.",
+                        + "taskGoal(same for all tasks the goal name being '%s') and taskDeadline. Ensure task deadlines start from '%s' and do not exceed '%s'. "
+                        + "Respond in JSON format as a list of task objects.",requestBody.getGoalName(),
                 requestBody.getGoalName(), currentDate, finalDeadline
         );
 
@@ -35,5 +35,12 @@ public class MistralAIController {
         String response = mistralAIService.generateResponse(prompt);
 
         return Map.of("tasks", response);
+    }
+    @PostMapping("/generate/text")
+    public String generateText(@PathVariable String prompt) {
+
+        String totalPrompt = "You are an AI assistant helping with answering prompt to a user. The users prompt is the following: "+prompt;
+
+        return mistralAIService.generateResponse(totalPrompt);
     }
 }

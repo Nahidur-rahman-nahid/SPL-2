@@ -1,6 +1,6 @@
 package com.bsse1401_bsse1429.TimeWise.repository;
 
-import com.bsse1401_bsse1429.TimeWise.model.Task;
+
 import com.bsse1401_bsse1429.TimeWise.model.User;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Set;
 
 @Repository
-public interface UserRepository extends MongoRepository<User, Integer> {
+public interface UserRepository extends MongoRepository<User, ObjectId> {
 
     User findByUserName(String username);
     User findByUserNameAndPassword(String username, String password);
@@ -18,4 +18,6 @@ public interface UserRepository extends MongoRepository<User, Integer> {
     List<User> findByUserNameIn(Set<String> userNames);
 
     List<User> findByUserEmail(String userEmail);
+
+    Set<String> findAllUserNames();
 }

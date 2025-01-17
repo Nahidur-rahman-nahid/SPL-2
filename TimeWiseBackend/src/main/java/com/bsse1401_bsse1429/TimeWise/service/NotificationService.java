@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class NotificationService {
 
-    public String sendNotification(NotificationRequestBody.SendNotification notificationBody){
+    public static String sendNotification(NotificationRequestBody.SendNotification notificationBody){
 
         return CollaborationEngine.sendNotification(
                 notificationBody.getEntityName(),
@@ -17,4 +17,6 @@ public class NotificationService {
                 notificationBody.getMessageContent());
 
     }
+
+
 }

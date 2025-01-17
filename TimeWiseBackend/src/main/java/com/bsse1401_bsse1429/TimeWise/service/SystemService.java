@@ -1,27 +1,34 @@
 package com.bsse1401_bsse1429.TimeWise.service;
 
+import com.bsse1401_bsse1429.TimeWise.engine.AnalyticsEngine;
 import com.bsse1401_bsse1429.TimeWise.engine.CollaborationEngine;
-import com.bsse1401_bsse1429.TimeWise.repository.UserRepository;
-import com.bsse1401_bsse1429.TimeWise.repository.TeamRepository;
-import com.bsse1401_bsse1429.TimeWise.repository.TaskRepository;
-import com.bsse1401_bsse1429.TimeWise.repository.UserVerificationMessageRepository;
-import com.bsse1401_bsse1429.TimeWise.utils.UserDetailResponse;
+import com.bsse1401_bsse1429.TimeWise.model.Notification;
+import com.bsse1401_bsse1429.TimeWise.model.PerformanceReport;
+import com.bsse1401_bsse1429.TimeWise.model.ProgressReport;
+import com.bsse1401_bsse1429.TimeWise.repository.*;
+import com.bsse1401_bsse1429.TimeWise.utils.*;
 import jakarta.annotation.PostConstruct;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.bsse1401_bsse1429.TimeWise.model.User;
-import com.bsse1401_bsse1429.TimeWise.utils.UserVerificationMessage;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
+@EnableAsync
 public class SystemService {
 
     @Autowired
@@ -40,6 +47,12 @@ public class SystemService {
     private TeamRepository teamRepositoryInstance;
 
     @Autowired
+    private ProgressReportRepository progressReportRepositoryInstance;
+
+    @Autowired
+    private PerformanceReportRepository performanceReportRepository;
+
+    @Autowired
     private UserVerificationMessageRepository userVerificationMessageRepositoryInstance;
 
     private static JWTService jwtService;
@@ -47,6 +60,7 @@ public class SystemService {
     private static UserRepository userRepository;
     private static TaskRepository taskRepository;
     private static TeamRepository teamRepository;
+    private static ProgressReportRepository progressReportRepository;
     private static UserVerificationMessageRepository userVerificationMessageRepository;
 
     private static final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
@@ -151,12 +165,12 @@ public class SystemService {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User not found in the database.");
                 }
 
-                 return ResponseEntity.ok("User logged in  successfully! Token: "+jwtService.generateToken(authenticatedUser.getUserId()));
+                return ResponseEntity.ok("User logged in  successfully! Token: "+jwtService.generateToken(authenticatedUser.getUserId()));
             } else {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Authentication failed. Invalid credentials.");
             }
         } catch (Exception e) {
-           return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Authentication failed. Bad credentials.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Authentication failed. Bad credentials.");
         }
     }
 
@@ -256,5 +270,162 @@ public class SystemService {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
     }
+
+    @Scheduled(cron = "0 0 9,17,22 * * *") // 9 AM, 5 PM, 10 PM daily
+    @Async("taskExecutor")
+    public void sendDailyProgressReportToAllUsers() {
+        Set<String> userNames = userRepository.findAllUserNames();
+        processReports(userNames, this::generateAndSendDailyReport);
+    }
+
+
+    @Scheduled(cron = "0 0 20 * * THU") // 8 PM every Thursday
+    @Async("taskExecutor")
+    public void sendWeeklyPerformanceReportToAllUsers() {
+        Set<String> userNames = userRepository.findAllUserNames();
+        processReports(userNames, this::generateAndSendWeeklyReport);
+    }
+
+
+    private void processReports(Set<String> userNames, Consumer<String> reportProcessor) {
+        for (String userName : userNames) {
+            CompletableFuture.runAsync(() -> reportProcessor.accept(userName));
+        }
+    }
+
+
+    private void generateAndSendDailyReport(String userName) {
+        try {
+            ProgressReport report = AnalyticsEngine.generateProgressReport(userName);
+            if (report != null) {
+                progressReportRepository.save(report);
+                String message = generateMessageDescriptionFromProgressReport(report);
+                CollaborationEngine.sendProgressAndPerformanceReport(message, userName, true);
+            }
+        } catch (Exception e) {
+            logError(e, "Daily Progress Report", userName);
+        }
+    }
+
+
+    private void generateAndSendWeeklyReport(String userName) {
+        try {
+            PerformanceReport report = AnalyticsEngine.generateWeeklyPerformanceReport(userName);
+            if (report != null) {
+                performanceReportRepository.save(report);
+                String message = generateMessageDescriptionFromPerformanceReport(report);
+                CollaborationEngine.sendProgressAndPerformanceReport(message, userName, false);
+            }
+        } catch (Exception e) {
+            logError(e, "Weekly Performance Report", userName);
+        }
+    }
+
+
+    private void logError(Exception e, String reportType, String userName) {
+        System.err.println("Failed to generate " + reportType + " for user: " + userName);
+        e.printStackTrace();
+    }
+    @Async
+    public String generateMessageDescriptionFromProgressReport(ProgressReport progressReport) {
+        // Separate tasks into deadline crossed and non-crossed categories
+        List<ProgressReport.TaskStatus> deadlineCrossedTasks = progressReport.getTaskStatuses().stream()
+                .filter(ProgressReport.TaskStatus::getIsDeadlineCrossed)
+                .toList();
+
+        List<ProgressReport.TaskStatus> nonDeadlineCrossedTasks = progressReport.getTaskStatuses().stream()
+                .filter(task -> !task.getIsDeadlineCrossed())
+                .toList();
+
+        // Build descriptive notification messages
+        StringBuilder messageBuilder = new StringBuilder();
+        messageBuilder.append("Progress Report Summary for ").append(progressReport.getUserName()).append(":\n\n");
+
+        if (!deadlineCrossedTasks.isEmpty()) {
+            messageBuilder.append("Tasks with Crossed Deadlines:\n");
+            for (ProgressReport.TaskStatus task : deadlineCrossedTasks) {
+                messageBuilder.append("- Task: ").append(task.getTaskName())
+                        .append(", Owner: ").append(task.getTaskOwner())
+                        .append(", Priority: ").append(task.getTaskPriority())
+                        .append(", Progress: ").append(task.getTasksCurrentProgress()).append("%\n");
+            }
+            messageBuilder.append("\n");
+        }
+
+        if (!nonDeadlineCrossedTasks.isEmpty()) {
+            messageBuilder.append("Tasks with Deadlines Remaining:\n");
+            for (ProgressReport.TaskStatus task : nonDeadlineCrossedTasks) {
+                messageBuilder.append("- Task: ").append(task.getTaskName())
+                        .append(", Owner: ").append(task.getTaskOwner())
+                        .append(", Priority: ").append(task.getTaskPriority())
+                        .append(", Progress: ").append(task.getTasksCurrentProgress()).append("%\n");
+            }
+            messageBuilder.append("\n");
+        }
+
+        if (deadlineCrossedTasks.isEmpty() && nonDeadlineCrossedTasks.isEmpty()) {
+            messageBuilder.append("No tasks available in the progress report.\n");
+        }
+
+        return messageBuilder.toString();
+    }
+
+    public static String generateMessageDescriptionFromPerformanceReport(PerformanceReport performanceReport) {
+        StringBuilder messageBuilder = new StringBuilder();
+
+        messageBuilder.append("Performance Summary for ").append(performanceReport.getUserName()).append(":\n\n");
+
+        // Include UsersTaskStatistics summary
+        UsersTaskStatistics taskStats = performanceReport.getUsersTaskStatistics();
+        if (taskStats != null) {
+            messageBuilder.append("Task Performance Summary:\n")
+                    .append("  - Tasks Completed Before Deadline: ")
+                    .append(String.join(", ", taskStats.getTasksCompletedBeforeDeadline())).append("\n")
+                    .append("  - Tasks Completed After Deadline: ")
+                    .append(String.join(", ", taskStats.getTasksCompletedAfterDeadline())).append("\n")
+                    .append("  - Unfinished Tasks with Deadline Remaining: ")
+                    .append(String.join(", ", taskStats.getDeadlineUncrossedAndUnfinishedTasks())).append("\n")
+                    .append("  - Unfinished Tasks with Deadline Crossed: ")
+                    .append(String.join(", ", taskStats.getDeadlineCrossedAndUnfinishedTasks())).append("\n\n");
+        }
+
+        // Include UsersSessionStatistics summary
+        UsersSessionStatistics sessionStats = performanceReport.getUsersSessionStatistics();
+        if (sessionStats != null) {
+            messageBuilder.append("Session Performance Summary:\n")
+                    .append("  - Total Sessions: ").append(sessionStats.getNumberOfSession()).append("\n")
+                    .append("  - Total Session Time: ").append(String.format("%.2f hours", sessionStats.getTotalSessionTime())).append("\n")
+                    .append("  - Average Efficiency: ").append(String.format("%.2f%%", sessionStats.getAverageSessionEfficiency())).append("\n")
+                    .append("  - Total Tasks Operated: ").append(sessionStats.getTotalTasksOperated()).append("\n")
+                    .append("  - Session Names: ").append(String.join(", ", sessionStats.getSessionNames())).append("\n\n");
+        }
+
+        // Include UsersFeedbackStatistics summary
+        UsersFeedbackStatistics feedbackStats = performanceReport.getUsersFeedbackStatistics();
+        if (feedbackStats != null) {
+            messageBuilder.append("Feedback Summary:\n")
+                    .append("  - Total Feedback Count: ").append(feedbackStats.getFeedbackCount()).append("\n")
+                    .append("  - Average Feedback Score: ").append(String.format("%.2f", feedbackStats.getAverageFeedbackScore())).append("\n")
+                    .append("  - Feedback Messages:\n").append(String.join("\n", feedbackStats.getFeedbackMessages())).append("\n\n");
+        }
+
+        // Include UsersAccountStatistics summary
+        UsersAccountStatistics accountStats = performanceReport.getUsersAccountStatistics();
+        if (accountStats != null) {
+            messageBuilder.append("Account Activity Summary:\n")
+                    .append("  - Users Following: ").append(accountStats.getNumberOfUserFollowing()).append("\n")
+                    .append("  - Teams Participated: ").append(accountStats.getTeamsParticipated()).append("\n")
+                    .append("  - Tasks Participated: ").append(accountStats.getNumberOfTasksParticipated()).append("\n")
+                    .append("  - Sessions Created: ").append(accountStats.getNumberOfSessionsCreated()).append("\n")
+                    .append("  - Messages Sent: ").append(accountStats.getNumberOfMessagesSent()).append("\n")
+                    .append("  - Messages Received: ").append(accountStats.getNumberOfMessagesReceived()).append("\n")
+                    .append("  - Previous Feedback Scores: ").append(accountStats.getPreviousFeedbackScores().toString()).append("\n");
+        }
+        return messageBuilder.toString();
+
+
+    }
+
+
 
 }

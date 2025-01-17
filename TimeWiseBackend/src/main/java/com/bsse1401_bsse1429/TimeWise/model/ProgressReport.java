@@ -22,8 +22,8 @@ public class ProgressReport {
     private Date timeStamp;
 
     // Method to add a comment
-    public void addTaskStatuses(String taskName,String taskOwner,String taskPriority, Integer taskCurrentProgress,Date taskCreationDate,Date taskDeadline) {
-        TaskStatus taskStatus = new TaskStatus(taskName,taskOwner,taskPriority, taskCurrentProgress,taskCreationDate, taskDeadline);
+    public void addTaskStatuses(String taskName,String taskOwner,String taskPriority, Integer taskCurrentProgress,Date taskCreationDate,Date taskDeadline,Boolean isDeadlineCrossed) {
+        TaskStatus taskStatus = new TaskStatus(taskName,taskOwner,taskPriority, taskCurrentProgress,taskCreationDate, taskDeadline,isDeadlineCrossed);
         this.taskStatuses.add(taskStatus);
     }
 
@@ -37,5 +37,6 @@ public class ProgressReport {
         private Integer tasksCurrentProgress;
         private Date taskCreationDate;
         private Date taskDeadline;
+        private Boolean isDeadlineCrossed;
     }
 }

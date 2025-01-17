@@ -55,7 +55,7 @@ public class AnalyticsEngine {
     public static ProgressReport generateProgressReport(String userName) {
         List<Task> userTasks=taskRepository.findByTaskParticipantsContains(userName);
         if(userTasks.isEmpty()){
-
+            return null;
         }
         ProgressReport userProgressReport=new ProgressReport();
         userProgressReport.setUserName(userName);
@@ -63,8 +63,8 @@ public class AnalyticsEngine {
         List<ProgressReport.TaskStatus> taskStatuses=new ArrayList<>();
         Date currentTime=new Date();
         for(Task task:userTasks) {
-            if(task.getTaskCurrentProgress()<100 && task.getTaskDeadline().after(currentTime)) {
-                userProgressReport.addTaskStatuses(task.getTaskName(),task.getTaskOwner(),task.getTaskPriority(), task.getTaskCurrentProgress(),task.getTaskCreationDate(), task.getTaskDeadline());
+            if(task.getTaskCurrentProgress()<100) {
+                userProgressReport.addTaskStatuses(task.getTaskName(),task.getTaskOwner(),task.getTaskPriority(), task.getTaskCurrentProgress(),task.getTaskCreationDate(), task.getTaskDeadline(), task.getTaskDeadline().before(currentTime));
             }
 
         }
@@ -90,14 +90,18 @@ public class AnalyticsEngine {
         report.setUserName(userName);
         report.setReportGeneratedDate(new Date());
 
-        // Generate Task Performance
-        report.setUsersTaskStatistics(StatisticsEngine.calculateTaskStatistics(userName));
+        // Generate Account Statistics
+        report.setUsersAccountStatistics(StatisticsEngine.calculateUserAccountStatistics(userName,7));
 
-        // Generate Session Performance
+
+        // Generate Task Statistics
+        report.setUsersTaskStatistics(StatisticsEngine.calculateTaskStatistics(userName,7));
+
+        // Generate Session Statistics
         report.setUsersSessionStatistics(StatisticsEngine.calculateSessionStatistics(userName, 7));
 
-        // Generate Feedback Summary
-        report.setUsersFeedbackStatistics(StatisticsEngine.calculateFeedbackStatistics(userName));
+        // Generate Feedback Statistics
+        report.setUsersFeedbackStatistics(StatisticsEngine.calculateFeedbackStatistics(userName,7));
 
 
         return report;

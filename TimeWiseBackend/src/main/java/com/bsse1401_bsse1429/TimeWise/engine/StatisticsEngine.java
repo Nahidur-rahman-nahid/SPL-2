@@ -59,25 +59,33 @@ public class StatisticsEngine {
         messageRepository=messageRepositoryInstance;
     }
 
-    public static UsersTaskStatistics calculateTaskStatistics(String userName) {
+    public static UsersTaskStatistics calculateTaskStatistics(String userName, int numberOfDays) {
+        // Find all tasks for the user
         List<Task> tasks = taskRepository.findByTaskParticipantsContains(userName);
+
+        // Calculate the cutoff date
+        Date cutoffDate = calculateCutoffDate(numberOfDays);
+
         UsersTaskStatistics taskPerformance = new UsersTaskStatistics(
                 new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>()
         );
 
         Date currentDate = new Date();
         for (Task task : tasks) {
-            boolean isCompleted = task.getTaskCurrentProgress() >= 100;
-            boolean isDeadlineCrossed = task.getTaskDeadline().before(currentDate);
+            // Filter tasks based on their creation or relevant timestamp
+            if (task.getTaskCreationDate().after(cutoffDate)) {
+                boolean isCompleted = task.getTaskCurrentProgress() >= 100;
+                boolean isDeadlineCrossed = task.getTaskDeadline().before(currentDate);
 
-            if (isCompleted && !isDeadlineCrossed) {
-                taskPerformance.getTasksCompletedBeforeDeadline().add(task.getTaskName());
-            } else if (isCompleted) {
-                taskPerformance.getTasksCompletedAfterDeadline().add(task.getTaskName());
-            } else if (!isDeadlineCrossed) {
-                taskPerformance.getDeadlineUncrossedAndUnfinishedTasks().add(task.getTaskName());
-            } else {
-                taskPerformance.getDeadlineCrossedAndUnfinishedTasks().add(task.getTaskName());
+                if (isCompleted && !isDeadlineCrossed) {
+                    taskPerformance.getTasksCompletedBeforeDeadline().add(task.getTaskName());
+                } else if (isCompleted) {
+                    taskPerformance.getTasksCompletedAfterDeadline().add(task.getTaskName());
+                } else if (!isDeadlineCrossed) {
+                    taskPerformance.getDeadlineUncrossedAndUnfinishedTasks().add(task.getTaskName());
+                } else {
+                    taskPerformance.getDeadlineCrossedAndUnfinishedTasks().add(task.getTaskName());
+                }
             }
         }
 
@@ -114,20 +122,30 @@ public class StatisticsEngine {
         );
     }
 
-    public static UsersFeedbackStatistics calculateFeedbackStatistics(String userName) {
+    public static UsersFeedbackStatistics calculateFeedbackStatistics(String userName, int numberOfDays) {
+        // Find all feedbacks for the user
         List<Feedback> feedbacks = feedbackRepository.findByFeedbackRecipientsContains(userName);
-        int feedbackCount = feedbacks.size();
+
+        // Calculate the cutoff date
+        Date cutoffDate = calculateCutoffDate(numberOfDays);
+
+        int feedbackCount = 0;
         double totalScore = 0;
         List<String> feedbackMessages = new ArrayList<>();
 
         for (Feedback feedback : feedbacks) {
-            totalScore += feedback.getFeedbackScore();
-            feedbackMessages.add(feedback.getFeedbackMessage());
+            // Filter feedbacks based on their timestamp
+            if (feedback.getTimeStamp().after(cutoffDate)) {
+                feedbackCount++;
+                totalScore += feedback.getFeedbackScore();
+                feedbackMessages.add(feedback.getFeedbackMessage());
+            }
         }
 
         double averageScore = feedbackCount > 0 ? totalScore / feedbackCount : 0;
         return new UsersFeedbackStatistics(feedbackCount, averageScore, feedbackMessages);
     }
+
 
 
     private static Date calculateCutoffDate(int numberOfDays) {
@@ -136,35 +154,46 @@ public class StatisticsEngine {
         return calendar.getTime();
     }
 
-    public static UsersAccountStatistics calculateUserAccountStatistics(String userName) {
+    public static UsersAccountStatistics calculateUserAccountStatistics(String userName, int numberOfDays) {
         // Fetch the user by username
         User user = userRepository.findByUserName(userName);
         if (user == null) {
             throw new IllegalArgumentException("User not found for username: " + userName);
         }
 
+        // Calculate the cutoff date
+        Date cutoffDate = calculateCutoffDate(numberOfDays);
+
         // Calculate the number of users the user is following
         Long numberOfUserFollowing = user.getUsersFollowing() != null ? (long) user.getUsersFollowing().size() : 0;
 
-        // Calculate the number of teams the user is participating in
+        // Calculate the number of teams the user is participating in (filter by cutoff date)
         Long teamsParticipated = teamRepository.countByTeamMembersContains(userName);
 
-        // Calculate the number of tasks the user has participated in
-        Long numberOfTasksParticipated = taskRepository.countByTaskParticipantsContains(userName);
+        // Filter tasks the user participated in based on the cutoff date
+        List<Task> tasksParticipated = taskRepository.findByTaskParticipantsContains(userName);
+        Long numberOfTasksParticipated = tasksParticipated.stream()
+                .filter(task -> task.getTaskCreationDate().after(cutoffDate))
+                .count();
 
-        // Calculate the number of sessions created by the user
-        Long numberOfSessionsCreated = sessionRepository.countBySessionCreator(userName);
+        // Filter sessions created by the user based on the cutoff date
+        List<Session> sessionsCreated = sessionRepository.findBySessionCreator(userName);
+        Long numberOfSessionsCreated = sessionsCreated.stream()
+                .filter(session -> session.getSessionTimeStamp().after(cutoffDate))
+                .count();
 
-        // Fetch feedback scores
+        // Fetch feedback scores (filtered by cutoff date)
         List<Feedback> feedbacks = feedbackRepository.findByFeedbackRecipientsContains(userName);
         List<Integer> previousFeedbackScores = new ArrayList<>();
         for (Feedback feedback : feedbacks) {
-            previousFeedbackScores.add( feedback.getFeedbackScore());
+            if (feedback.getTimeStamp().after(cutoffDate)) {
+                previousFeedbackScores.add(feedback.getFeedbackScore());
+            }
         }
 
-        // Count messages sent and received (this assumes you have repositories to track messages)
-        Long numberOfMessagesSent = messageRepository.countBySender(userName); // Example usage
-        Long numberOfMessagesReceived = messageRepository.countByRecipientsContains(userName);
+        // Count messages sent and received within the cutoff date
+        Long numberOfMessagesSent = messageRepository.countBySenderAndTimestampAfter(userName, cutoffDate);
+        Long numberOfMessagesReceived = messageRepository.countByRecipientsContainsAndTimestampAfter(userName, cutoffDate);
 
         return new UsersAccountStatistics(
                 numberOfUserFollowing,
@@ -177,6 +206,8 @@ public class StatisticsEngine {
         );
     }
 
-
-
 }
+
+
+
+

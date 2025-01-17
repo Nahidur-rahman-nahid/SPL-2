@@ -1,6 +1,7 @@
 package com.bsse1401_bsse1429.TimeWise.model;
 
 
+import com.bsse1401_bsse1429.TimeWise.utils.UsersAccountStatistics;
 import com.bsse1401_bsse1429.TimeWise.utils.UsersFeedbackStatistics;
 import com.bsse1401_bsse1429.TimeWise.utils.UsersSessionStatistics;
 import com.bsse1401_bsse1429.TimeWise.utils.UsersTaskStatistics;
@@ -23,6 +24,7 @@ public class PerformanceReport {
     @Id
     private ObjectId performanceReportId;
     private String userName;
+    private UsersAccountStatistics usersAccountStatistics;
     private UsersTaskStatistics usersTaskStatistics;
     private UsersSessionStatistics usersSessionStatistics;
     private UsersFeedbackStatistics usersFeedbackStatistics;

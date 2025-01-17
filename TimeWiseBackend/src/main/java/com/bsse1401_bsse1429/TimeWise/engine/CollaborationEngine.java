@@ -1,10 +1,7 @@
 package com.bsse1401_bsse1429.TimeWise.engine;
 
 import com.bsse1401_bsse1429.TimeWise.model.*;
-import com.bsse1401_bsse1429.TimeWise.repository.NotificationRepository;
-import com.bsse1401_bsse1429.TimeWise.repository.TaskRepository;
-import com.bsse1401_bsse1429.TimeWise.repository.TeamRepository;
-import com.bsse1401_bsse1429.TimeWise.repository.UserRepository;
+import com.bsse1401_bsse1429.TimeWise.repository.*;
 import com.bsse1401_bsse1429.TimeWise.utils.UserCredentials;
 import jakarta.annotation.PostConstruct;
 import org.bson.types.ObjectId;
@@ -13,16 +10,22 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
 @Component
+@EnableAsync
 public class CollaborationEngine {
 
     @Autowired
     private NotificationRepository notificationRepositoryInstance;
+
+    @Autowired
+    private MessageRepository messageRepositoryInstance;
 
     @Autowired
     private  TeamRepository teamRepositoryInstance;
@@ -41,6 +44,7 @@ public class CollaborationEngine {
     private static TeamRepository teamRepository;
     private static TaskRepository taskRepository;
     private static NotificationRepository notificationRepository;
+    private static MessageRepository messageRepository;
 
     private static String timeWiseEmail;
 
@@ -54,6 +58,7 @@ public class CollaborationEngine {
         teamRepository=teamRepositoryInstance;
         taskRepository=taskRepositoryInstance;
         notificationRepository=notificationRepositoryInstance;
+        messageRepository=messageRepositoryInstance;
         timeWiseEmail = timeWiseEmailInstance;
 
     }
@@ -73,20 +78,11 @@ public class CollaborationEngine {
                         sender + " invited you to join the " + (notificationSubject.equals("TEAM_INVITATION") ? "team " : "task ") + entityName);
                 break;
 
-            case "TEAM_MESSAGE":
             case "NEW_TEAM_TASK_ADDED":
             case "A_TEAM_TASK_REMOVED":
                 notification = createTeamNotification(sender, entityName, notificationSubject, "Message from "+ sender + " to team " + entityName + ": " + messageContent);
                 break;
 
-            case "USER_MESSAGE":
-                notification = createNotification(sender, notificationSubject, null, recipient,
-                        "Message from " + sender + " to you: " + messageContent);
-                break;
-
-            case "TIME_WISE_MESSAGE":
-                notification = createNotification(sender, notificationSubject, null, sender, "System alert: " + messageContent);
-                break;
 
             case "REPLY_TO_TEAM_INVITATION":
             case "REPLY_TO_TASK_INVITATION":
@@ -100,10 +96,41 @@ public class CollaborationEngine {
                 throw new IllegalArgumentException("Invalid notification subject");
         }
 
-        notificationRepository.save(notification);
-        return sendEmail(notification);
-    }
+        sendEmail(notification);
 
+        notificationRepository.save(notification);
+        return "Successfully sent notification";
+    }
+    public static String sendMessage( String sender,String recipient,String messageSubject,String messageDescription) {
+        Notification notification=new Notification();
+        switch (messageSubject) {
+            case "USER_MESSAGE":
+                notification = createNotification(sender, messageSubject, null, recipient,
+                        "Message from " + sender + " to you: " + messageDescription);
+                break;
+
+            case "TIME_WISE_MESSAGE":
+                notification = createNotification(sender, messageSubject, null, sender, "Message From TimeWise: " + messageDescription);
+                break;
+
+            case "TEAM_MESSAGE":
+            notification = createTeamNotification(sender, recipient, messageSubject, "Message from "+ sender + " to team " + recipient + ": " + messageDescription);
+            break;
+            default:
+                throw new IllegalArgumentException("Invalid notification subject");
+        }
+        Message message=new Message();
+        message.setSender(sender);
+        message.setRecipients(notification.getRecipients());
+        message.setMessageSubject(messageSubject);
+        message.setMessageDescription(messageDescription);
+        message.setMessageStatus("Unseen");
+        message.setTimeStamp(new Date());
+        messageRepository.save(message);
+        sendEmail(notification);
+        return "Successfully sent message";
+
+    }
 
 
     private static Notification createNotification(String sender, String subject, String entityName, String recipient, String messageContent) {
@@ -230,6 +257,7 @@ public class CollaborationEngine {
         }
     }
 
+    @Async
     public static String sendEmail(Notification notification) {
         StringBuilder emailStatus = new StringBuilder();
 
@@ -274,14 +302,10 @@ public class CollaborationEngine {
             try {
                 SimpleMailMessage message = new SimpleMailMessage();
                 message.setFrom(sender.getUserEmail());
-                System.out.println("1");
                 message.setTo(recipient.getUserEmail());
-                System.out.println("2");
                 message.setSubject(notification.getNotificationSubject());
                 message.setText(notification.getNotificationMessage());
-                System.out.println("3");
                 mailSender.send(message);
-                System.out.println("4");
                 emailStatus.append("Email successfully sent to ").append(recipient.getUserName()).append("\n");
             } catch (Exception e) {
                 emailStatus.append("Failed to send email to ").append(recipient.getUserName())
@@ -291,7 +315,43 @@ public class CollaborationEngine {
 
         return emailStatus.toString();
     }
+    @Async
+    public static String sendProgressAndPerformanceReport(String messageBody,String userName,Boolean isProgressReport) {
+        User recipient =userRepository.findByUserName(userName);
+        if(recipient==null){
+           return null;
+        }
+        if(recipient.getUserEmail()==null){
+            return null;
+        }
+        StringBuilder messageSubject=new StringBuilder();
+        if(isProgressReport){
+            messageSubject.append("Daily Progress Report Summary for : ").append(userName).append("\n\n");
+        }
+        else{
+            messageSubject.append("Weekly Performance Report Summary for : ").append(userName).append("\n\n");
+        }
+        StringBuilder emailStatus = new StringBuilder();
 
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(timeWiseEmail);
+            message.setTo(recipient.getUserEmail());
+            message.setSubject(messageSubject.toString());
+            message.setText(messageBody);
+            mailSender.send(message);
+            emailStatus.append("Email successfully sent to ").append(recipient.getUserName()).append("\n");
+        } catch (Exception e) {
+            emailStatus.append("Failed to send email to ").append(recipient.getUserName())
+                    .append(": ").append(e.getMessage()).append("\n");
+        }
+        return emailStatus.toString();
+
+    }
+
+
+
+    @Async
     public static String sendUserRegistrationVerificationCode(String receiverName, String receiverEmail,String verificationCode) {
 
         StringBuilder emailStatus = new StringBuilder();
@@ -310,6 +370,7 @@ public class CollaborationEngine {
         return emailStatus.toString();
         }
 
+    @Async
     public static String sendRegistrationSuccessfulMessage(String receiverName, String receiverEmail) {
         StringBuilder emailStatus = new StringBuilder();
         try {
@@ -327,6 +388,7 @@ public class CollaborationEngine {
         return emailStatus.toString();
     }
 
+    @Async
     public static String sendAccountVerificationCode( String receiverEmail,String verificationCode) {
 
 
