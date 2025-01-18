@@ -165,7 +165,7 @@ public class SystemService {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User not found in the database.");
                 }
 
-                return ResponseEntity.ok("User logged in  successfully! Token: "+jwtService.generateToken(authenticatedUser.getUserId()));
+                return ResponseEntity.ok("User logged in  successfully! Token: "+jwtService.generateToken(authenticatedUser.getUserId(),authenticatedUser.getUserName(),authenticatedUser.getUserEmail()));
             } else {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Authentication failed. Invalid credentials.");
             }

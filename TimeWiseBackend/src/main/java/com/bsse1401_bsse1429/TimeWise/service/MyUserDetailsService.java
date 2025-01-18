@@ -14,30 +14,21 @@ import org.springframework.stereotype.Service;
 public class MyUserDetailsService implements UserDetailsService {
 
     @Autowired
-    private UserRepository userRepo;
+    private UserRepository userRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        System.out.println("Insde load user name .");
-        User user = userRepo.findByUserName(username); // Ensure this method exists in the repository
+        User user = userRepository.findByUserName(username); // Ensure this method exists in the repository
         if (user == null) {
             throw new UsernameNotFoundException("User not found with username: " + username);
         }
         return new UserPrincipal(user);
     }
 
-    public UserDetails loadUserByUserId(String userId) throws UsernameNotFoundException {
-        System.out.println("Insde load user iD .");
-        // Convert the string userId to an ObjectId
-        ObjectId objectId;
-        try {
-            objectId = new ObjectId(userId);
-        } catch (IllegalArgumentException e) {
-            throw new UsernameNotFoundException("Invalid userId format");
-        }
+    public UserPrincipal loadUserByUserId(ObjectId userId) throws UsernameNotFoundException {
 
         // Query the user from the repository
-        User user = userRepo.findByUserId(objectId);
+        User user = userRepository.findByUserId(userId);
         if (user == null) {
             throw new UsernameNotFoundException("User not found with ID: " + userId);
         }

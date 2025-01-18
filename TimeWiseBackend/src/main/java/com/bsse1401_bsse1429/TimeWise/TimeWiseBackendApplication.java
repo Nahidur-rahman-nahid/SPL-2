@@ -3,7 +3,6 @@ package com.bsse1401_bsse1429.TimeWise;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.Scheduled;
 
 @Async
 @SpringBootApplication

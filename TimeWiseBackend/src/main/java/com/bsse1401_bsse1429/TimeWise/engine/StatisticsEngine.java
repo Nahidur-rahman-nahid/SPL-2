@@ -192,8 +192,8 @@ public class StatisticsEngine {
         }
 
         // Count messages sent and received within the cutoff date
-        Long numberOfMessagesSent = messageRepository.countBySenderAndTimestampAfter(userName, cutoffDate);
-        Long numberOfMessagesReceived = messageRepository.countByRecipientsContainsAndTimestampAfter(userName, cutoffDate);
+        Long numberOfMessagesSent = messageRepository.countBySenderAndTimeStampAfter(userName, cutoffDate);
+        Long numberOfMessagesReceived = messageRepository.countByRecipientsContainsAndTimeStampAfter(userName, cutoffDate);
 
         return new UsersAccountStatistics(
                 numberOfUserFollowing,

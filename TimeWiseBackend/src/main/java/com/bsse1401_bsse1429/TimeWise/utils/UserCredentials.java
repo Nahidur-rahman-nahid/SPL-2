@@ -7,7 +7,6 @@ public class UserCredentials {
 
     // Method to get the current user's username
     public static String getCurrentUsername() {
-        System.out.println("djgjjdfjf");
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof UserPrincipal userPrincipal) {
             return userPrincipal.getUsername();

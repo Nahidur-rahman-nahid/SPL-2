@@ -4,6 +4,7 @@ package com.bsse1401_bsse1429.TimeWise.repository;
 import com.bsse1401_bsse1429.TimeWise.model.User;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -19,5 +20,6 @@ public interface UserRepository extends MongoRepository<User, ObjectId> {
 
     List<User> findByUserEmail(String userEmail);
 
+    @Query(value = "{}", fields = "{'userName': 1, '_id': 0}")
     Set<String> findAllUserNames();
 }

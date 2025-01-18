@@ -190,7 +190,7 @@ public class TaskService {
 
     }
 
-    // Delete a task by ID
+    // Delete a task by task name
     public String deleteTask(String taskName) {
         String  userName=UserCredentials.getCurrentUsername();
         String response=CollaborationEngine.removeDeletedTaskFromTeams(taskName,userName);
