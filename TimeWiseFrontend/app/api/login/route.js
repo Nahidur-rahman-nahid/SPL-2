@@ -1,4 +1,4 @@
-import fetch from 'node-fetch'; // Import fetch for making external requests
+// import fetch from 'node-fetch'; // Import fetch for making external requests
 
 // POST request handler for /api/login
 export async function POST(req) {

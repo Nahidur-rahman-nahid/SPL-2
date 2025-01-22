@@ -1,11 +1,14 @@
-import WelcomeMessage from "@/components/WelcomeMessage";
+// app/page.js
+import { redirect } from 'next/navigation';
 
-const Home = () => {
-  return (
-    <>
-      <WelcomeMessage />
-    </>
-  );
+export const metadata = {
+  title: "TimeWise - Home",
+  description: "Welcome to TimeWise, manage your time and productivity."
 };
 
-export default Home;
+// Mark the component as async
+async function HomePage() { 
+      redirect('/home');
+}
+
+export default HomePage;
