@@ -273,9 +273,9 @@ public class TaskService {
         return tasks;
     }
 
-    public ResponseEntity<?> getTaskDetails(ObjectId taskId) {
+    public ResponseEntity<?> getTaskDetails(String taskName,String taskOwner) {
         // Fetch the task from the database
-        Task task = taskRepository.findByTaskId(taskId);
+        Task task = taskRepository.findByTaskNameAndTaskOwner(taskName,taskOwner);
 
         if(task==null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Task not found");
@@ -300,4 +300,10 @@ public class TaskService {
     }
 
 
+    public List<Task> getAllTasksOfAnUserSortedByGoal() {
+        String userName = UserCredentials.getCurrentUsername(); // Get the current user's username
+        List<Task> tasks = taskRepository.findByTaskParticipantsContains(userName); // Fetch tasks where the user is a participant
+        tasks.sort(Comparator.comparing(Task::getTaskGoal, String.CASE_INSENSITIVE_ORDER)); // Sort alphabetically by task goal (case-insensitive)
+        return tasks; // Return the sorted list
+    }
 }

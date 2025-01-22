@@ -2,9 +2,7 @@ package com.bsse1401_bsse1429.TimeWise.service;
 
 import com.bsse1401_bsse1429.TimeWise.engine.AnalyticsEngine;
 import com.bsse1401_bsse1429.TimeWise.engine.CollaborationEngine;
-import com.bsse1401_bsse1429.TimeWise.model.Notification;
-import com.bsse1401_bsse1429.TimeWise.model.PerformanceReport;
-import com.bsse1401_bsse1429.TimeWise.model.ProgressReport;
+import com.bsse1401_bsse1429.TimeWise.model.*;
 import com.bsse1401_bsse1429.TimeWise.repository.*;
 import com.bsse1401_bsse1429.TimeWise.utils.*;
 import jakarta.annotation.PostConstruct;
@@ -20,7 +18,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import com.bsse1401_bsse1429.TimeWise.model.User;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -131,6 +128,7 @@ public class SystemService {
         user.setPassword(encoder.encode(rawPassword));
         user.setUserStatus("Active");
         user.setTodos(new ArrayList<>());
+        user.setNotes(new ArrayList<>());
         user.setUsersFollowing(new HashSet<>());
         if(user.getRole()==null){
             user.setRole("User");
@@ -226,6 +224,56 @@ public class SystemService {
 
     }
 
+    // Update user details
+    public static ResponseEntity<?> updateUserAccounDetails(String userName, UpdatedUserAccount updatedUserDetails) {
+        Boolean newTokenNeeded=false;
+        // Find the user by userName
+        User existingUser = userRepository.findByUserName(userName);
+
+        if (existingUser == null) {
+            throw new RuntimeException("User not found with username: " + userName);
+        }
+
+        // Update fields selectively if they are not null or empty
+        if (updatedUserDetails.getUserName() != null && !updatedUserDetails.getUserName().isEmpty()) {
+            existingUser.setUserName(updatedUserDetails.getUserName());
+            newTokenNeeded=true;
+        }
+
+        if (updatedUserDetails.getUserEmail() != null && !updatedUserDetails.getUserEmail().isEmpty()) {
+            existingUser.setUserEmail(updatedUserDetails.getUserEmail());
+            newTokenNeeded=true;
+        }
+
+        if (updatedUserDetails.getPreviousPassword() != null && !updatedUserDetails.getPreviousPassword().isEmpty() && updatedUserDetails.getNewPassword() != null && !updatedUserDetails.getNewPassword().isEmpty()) {
+            if(existingUser.getPassword().equals(encoder.encode(updatedUserDetails.getPreviousPassword()))){
+                existingUser.setPassword(encoder.encode(updatedUserDetails.getNewPassword()));
+            }
+            else{
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Incorrect previous password");
+            }
+        }
+
+        if (updatedUserDetails.getShortBioData() != null && !updatedUserDetails.getShortBioData().isEmpty()) {
+            existingUser.setShortBioData(updatedUserDetails.getShortBioData());
+        }
+
+        if (updatedUserDetails.getRole() != null && !updatedUserDetails.getRole().isEmpty()) {
+            existingUser.setRole(updatedUserDetails.getRole());
+        }
+
+        if (updatedUserDetails.getUserStatus() != null && !updatedUserDetails.getUserStatus().isEmpty()) {
+            existingUser.setUserStatus(updatedUserDetails.getUserStatus());
+        }
+
+        // Save the updated user to the repository
+         userRepository.save(existingUser);
+        if(newTokenNeeded) {
+            return ResponseEntity.ok("Account Updated Successfully.Session Expired. Log in again.");
+        }
+        return  ResponseEntity.ok("Account Updated Successfully");
+    }
+
     public static ResponseEntity<?> getUserAccountDetails(String userName) {
         // Check if the user exists
         User user = userRepository.findByUserName(userName);
@@ -239,18 +287,23 @@ public class SystemService {
             userDetailResponse.setRole(user.getRole());
             userDetailResponse.setUserStatus(user.getUserStatus());
 
-            // Fetch tasks where user is a participant or tasks marked as public
             List<UserDetailResponse.UserTasks> userTasks = taskRepository.findAll().stream()
                     .filter(task ->
-                            task.getTaskParticipants().contains(userName) ||
-                                    "public".equalsIgnoreCase(task.getTaskVisibilityStatus()))
+                            task.getTaskParticipants().contains(userName) || // Check if user is a participant
+                                    "public".equalsIgnoreCase(task.getTaskVisibilityStatus())) // Check if task visibility is public
                     .map(task -> new UserDetailResponse.UserTasks(
                             task.getTaskName(),
+                            task.getTaskOwner(),
                             task.getTaskCategory(),
-                            task.getTaskDescription()
+                            task.getTaskDescription(),
+                            task.getTaskTodos().stream()
+                                    .map(Task.TaskTodo::getDescription)
+                                    .collect(Collectors.toList())
                     ))
                     .collect(Collectors.toList());
+
             userDetailResponse.setUserTasks(userTasks);
+
 
             // Fetch teams where user is a member or teams marked as public
             List<UserDetailResponse.UserTeams> userTeams = teamRepository.findAll().stream()

@@ -4,6 +4,8 @@ import com.bsse1401_bsse1429.TimeWise.engine.CollaborationEngine;
 import com.bsse1401_bsse1429.TimeWise.model.User;
 import com.bsse1401_bsse1429.TimeWise.repository.UserRepository;
 import com.bsse1401_bsse1429.TimeWise.utils.NotificationRequestBody;
+import com.bsse1401_bsse1429.TimeWise.utils.UpdatedUserAccount;
+import com.bsse1401_bsse1429.TimeWise.utils.UserCredentials;
 import com.bsse1401_bsse1429.TimeWise.utils.UserDetailResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -51,6 +53,52 @@ public class UserService {
     public ResponseEntity<?> getUserDetails(String userName) {
        return SystemService.getUserAccountDetails(userName);
     }
+
+    public ResponseEntity<?> addTodo(String todo) {
+        String  currentUserName= UserCredentials.getCurrentUsername();
+        User user=userRepository.findByUserName(currentUserName);
+        if(user==null){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
+        if(todo.length()<8){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A todo has to minimum 8 character long");
+        }
+
+        if(user.getTodos().contains(todo)){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A similar todo exist");
+        }
+        user.getTodos().add(new User.Todo(todo,"Incomplete"));
+        userRepository.save(user);
+        return ResponseEntity.ok(user.getTodos());
+    }
+    public ResponseEntity<?> addNote(String note) {
+        String  currentUserName= UserCredentials.getCurrentUsername();
+        User user=userRepository.findByUserName(currentUserName);
+        if(user==null){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
+        if(note.length()<8){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A note has to minimum 8 character long");
+        }
+        if(user.getNotes().contains(note)){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A similar note exist");
+        }
+        user.getNotes().add(new User.Note(note,new Date()));
+        userRepository.save(user);
+        return ResponseEntity.ok(user.getNotes());
+    }
+
+    public ResponseEntity<?> getUsersPersonalAccountDetails() {
+        String  currentUserName= UserCredentials.getCurrentUsername();
+        User user=userRepository.findByUserName(currentUserName);
+        if(user==null){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
+        }
+        user.setUserId(null);
+        return ResponseEntity.ok(user);
+    }
+    // Update user details
+
 
 
 

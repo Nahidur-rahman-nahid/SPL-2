@@ -5,6 +5,7 @@ import com.bsse1401_bsse1429.TimeWise.model.User;
 import com.bsse1401_bsse1429.TimeWise.service.SystemService;
 import com.bsse1401_bsse1429.TimeWise.service.UserService;
 import com.bsse1401_bsse1429.TimeWise.utils.NotificationRequestBody;
+import com.bsse1401_bsse1429.TimeWise.utils.UpdatedUserAccount;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,9 +43,28 @@ public class UserController {
         return userService.forgottenAccountVerification(code,userEmail);
     }
 
-    @GetMapping("/{userName}")
-    public ResponseEntity<?> getUserDetails(@PathVariable String userName) {
+    @PostMapping("/add/todo")
+    public ResponseEntity<?> addTodo(@RequestParam String todo) {
+        return userService.addTodo(todo);
+    }
+
+    @PostMapping("/add/note")
+    public ResponseEntity<?> addNote(@RequestParam String note ) {
+        return userService.addNote(note);
+    }
+
+    @GetMapping("/account/other/details")
+    public ResponseEntity<?> getAnotherUserAccountDetails(@PathVariable String userName) {
         return userService.getUserDetails(userName);
+    }
+    @GetMapping("/account/personal/details")
+    public ResponseEntity<?> getUsersPersonalAccountDetails() {
+        return userService.getUsersPersonalAccountDetails();
+    }
+
+    @PutMapping("/account/update")
+    public ResponseEntity<?> updateUser(@PathVariable String userName, @RequestBody UpdatedUserAccount updatedUserDetails) {
+           return SystemService.updateUserAccounDetails(userName,updatedUserDetails);
     }
 
 

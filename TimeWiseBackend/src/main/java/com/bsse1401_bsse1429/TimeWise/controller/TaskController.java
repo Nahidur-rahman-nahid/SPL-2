@@ -8,6 +8,7 @@ import com.bsse1401_bsse1429.TimeWise.utils.TaskModificationRequestBody;
 import com.bsse1401_bsse1429.TimeWise.service.TaskService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,33 +32,61 @@ public class TaskController {
 
     // Get all tasks of a User
     @GetMapping("/all")
-    public ResponseEntity<List<Task>> allTasks() {
+    public ResponseEntity<?> allTasks() {
 
         List<Task> tasks = taskService.getAllTasksOfAnUser();
+        if(tasks==null || tasks.isEmpty()){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No tasks found");
+
+        }
         return ResponseEntity.ok(tasks);
     }
 
     // Get all tasks sorted on priority (high, normal, low)
     @GetMapping("/all/sort/priority")
-    public ResponseEntity<List<Task>> allTasksSortedByPriority() {
+    public ResponseEntity<?> allTasksSortedByPriority() {
 
         List<Task> tasks = taskService.getAllTasksOfAnUserSortedByPriority();
+        if(tasks==null || tasks.isEmpty()){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No tasks found");
+
+        }
         return ResponseEntity.ok(tasks);
     }
 
     // Get all tasks sorted on deadline
     @GetMapping("/all/sort/deadline")
-    public ResponseEntity<List<Task>> allTasksSortedByDeadline() {
+    public ResponseEntity<?> allTasksSortedByDeadline() {
 
         List<Task> tasks = taskService.getAllTasksOfAnUserSortedByDeadline();
+        if(tasks==null || tasks.isEmpty()){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No tasks found");
+
+        }
         return ResponseEntity.ok(tasks);
     }
 
     // Get all tasks sorted on progress
     @GetMapping("/all/sort/progress")
-    public ResponseEntity<List<Task>> allTasksSortedByProgress() {
+    public ResponseEntity<?> allTasksSortedByProgress() {
 
         List<Task> tasks = taskService.getAllTasksOfAnUserSortedByProgress();
+        if(tasks==null || tasks.isEmpty()){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No tasks found");
+
+        }
+        return ResponseEntity.ok(tasks);
+    }
+
+    // Get all tasks sorted on progress
+    @GetMapping("/all/sort/goal")
+    public ResponseEntity<?> allTasksSortedByGoal() {
+
+        List<Task> tasks = taskService.getAllTasksOfAnUserSortedByGoal();
+        if(tasks==null || tasks.isEmpty()){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No tasks found");
+
+        }
         return ResponseEntity.ok(tasks);
     }
 
@@ -109,8 +138,8 @@ public class TaskController {
     }
 
     @GetMapping("/{taskId}")
-    public ResponseEntity<?> getTaskDetails(@PathVariable ObjectId taskId) {
-        return taskService.getTaskDetails(taskId);
+    public ResponseEntity<?> getTaskDetails(@PathVariable String taskName,@PathVariable String taskOwner) {
+        return taskService.getTaskDetails(taskName,taskOwner);
     }
 
 

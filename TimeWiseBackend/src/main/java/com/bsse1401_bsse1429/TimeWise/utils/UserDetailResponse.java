@@ -25,8 +25,10 @@ public  class UserDetailResponse {
     @AllArgsConstructor
     public static class UserTasks {
         private String taskName;
+        private String taskOwner;
         private String taskCategory;
         private String taskDescription;
+        private List<String> subTasks;
     }
 
     @Data

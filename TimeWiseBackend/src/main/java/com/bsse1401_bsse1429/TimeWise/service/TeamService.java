@@ -70,11 +70,7 @@ public class TeamService {
         return teamRepository.findByTeamMembersContaining(userName);
     }
 
-    public Team getTeamById(ObjectId teamId) {
-        return teamRepository.findById(teamId).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found with ID: " + teamId)
-        );
-    }
+
     public ResponseEntity<?> getTeamDetails(String teamName) {
         // Fetch the team by teamName
         Team team = teamRepository.findByTeamName(teamName);
