@@ -22,7 +22,7 @@ public class User {
     private String role;
     private String userStatus; // active or inactive(logged out or manual inactive setting)
     private List<Todo> todos;
-    private List<Note> noted;
+    private List<Note> notes;
     private Set<String> usersFollowing;
 
 

@@ -21,7 +21,7 @@ public class Feedback {
     private ObjectId feedbackId;
     private String feedbackSender;
     private Set<String> feedbackRecipients;
-    private String feedbackTask;
+    private String feedbackTaskName;
     private Integer feedbackScore; // 0.0 to 100.0
     private String feedbackMessage;
     private Date timeStamp;
