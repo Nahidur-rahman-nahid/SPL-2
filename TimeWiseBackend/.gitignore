@@ -4,3 +4,5 @@ test
 pom.xml
 mvnw
 mvnw.cmd
+HELP.md
+.idea

@@ -24,7 +24,6 @@ const Navbar = React.memo(() => {
   };
 
   const options = [
-    { id: "goals", label: "My Goals", icon: <FaBullseye className="mr-3 text-blue-500" /> },
     { id: "tasks", label: "My Tasks", icon: <FaTasks className="mr-3 text-green-500" /> },
     { id: "progress", label: "My Progress", icon: <FaChartLine className="mr-3 text-purple-500" /> },
     { id: "performance", label: "My Performance History", icon: <FaHistory className="mr-3 text-orange-500" /> },
@@ -88,11 +87,11 @@ const Navbar = React.memo(() => {
             placeholder="Search"
             className="px-3 py-1.5 rounded-lg border border-gray-600 bg-gray-900 text-white focus:outline-none focus:border-gray-400"
           />
-          <img
+          {/* <img
             src="/profile-pic.png"
             alt="Profile Picture"
             className="h-10 w-10 rounded-full ml-3 border-2 border-gray-600"
-          />
+          /> */}
         </div>
       </div>
 
@@ -128,11 +127,11 @@ const Navbar = React.memo(() => {
             placeholder="Search"
             className="px-3 py-1.5 rounded-lg border border-gray-600 bg-gray-900 text-white focus:outline-none focus:border-gray-400 mt-2"
           />
-          <img
+          {/* <img
             src="/profile-pic.png"
             alt="Profile Picture"
             className="h-10 w-10 rounded-full mt-3 border-2 border-gray-600"
-          />
+          /> */}
         </div>
       )}
     </header>

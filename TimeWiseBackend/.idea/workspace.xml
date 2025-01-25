@@ -4,7 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="603770cc-8cea-43bd-8a71-b97a6a7ea074" name="Changes" comment="All good" />
+    <list default="true" id="603770cc-8cea-43bd-8a71-b97a6a7ea074" name="Changes" comment="user Account details updating functionality added">
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/utils/UpdatedUserAccount.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/jarRepositories.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/jarRepositories.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/TimeWiseBackendApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/TimeWiseBackendApplication.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/model/Feedback.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/model/Feedback.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/model/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/model/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/bsse1401_bsse1429/TimeWise/repository/VerificationCodeRepository.java" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -65,20 +77,20 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.TimeWiseBackendApplication.executor": "Run",
-    "JUnit.TimeWiseBackendApplicationTests.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "main",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "E:/5thSem/TimeWise/TimeWiseBackend",
-    "project.structure.last.edited": "Facets",
-    "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "org.jetbrains.plugins.github.ui.GithubSettingsConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.TimeWiseBackendApplication.executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.TimeWiseBackendApplicationTests.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;E:/5thSem/DesignPattern/DesignPatterExamples&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;project.propVCSSupport.Mappings&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="E:\5thSem\TimeWise\TimeWiseBackend" />
@@ -237,7 +249,15 @@
       <option name="project" value="LOCAL" />
       <updated>1734962456374</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="user Account details updating functionality added">
+      <option name="closed" value="true" />
+      <created>1737540291875</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1737540291875</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -255,7 +275,8 @@
     <MESSAGE value="Backend Code added for registration and login" />
     <MESSAGE value="Merge remote-tracking branch 'origin/main'&#10;&#10;# Conflicts:&#10;#&#9;TimeWiseBackend/target/classes/application.properties" />
     <MESSAGE value="All good" />
-    <option name="LAST_COMMIT_MESSAGE" value="All good" />
+    <MESSAGE value="user Account details updating functionality added" />
+    <option name="LAST_COMMIT_MESSAGE" value="user Account details updating functionality added" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

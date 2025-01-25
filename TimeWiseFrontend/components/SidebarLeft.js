@@ -16,7 +16,6 @@ const SidebarLeft = () => {
 
   // Define services for TimeWise
   const options = [
-    { id: "goals", label: "My Goals", icon: <FaBullseye className="mr-3 text-blue-500" /> },
     { id: "tasks", label: "My Tasks", icon: <FaTasks className="mr-3 text-green-500" /> },
     { id: "progress", label: "My Progress", icon: <FaChartLine className="mr-3 text-purple-500" /> },
     { id: "performance", label: "My Performance History", icon: <FaHistory className="mr-3 text-orange-500" /> },

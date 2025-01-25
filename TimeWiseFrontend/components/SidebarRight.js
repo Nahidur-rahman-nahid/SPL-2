@@ -2,7 +2,7 @@
 import React from "react";
 import { FaTachometerAlt, FaEnvelope, FaSearch, FaUserCircle, FaComments, FaUserFriends } from "react-icons/fa";
 
-const SidebarRight = () => {
+const SidebarRight = ({ userData }) => {
   const handleClick = (message) => {
     alert(message);
   };
@@ -24,10 +24,10 @@ const SidebarRight = () => {
           <FaUserCircle className="text-3xl text-gray-800 mr-3" />
           <div className="flex flex-col w-full">
             <h2 className="text-xl font-bold text-gray-800 break-words">{/* Allows the name to break onto a new line */}
-              John Dadfadffadfadfe
+              {userData.userName}
             </h2>
             <p className="text-gray-600 text-sm break-words">{/* Allows the email to break onto a new line */}
-              johndoaefdadfadfaadfde@gmail.com
+              {userData.userEmail}
             </p>
           </div>
         </div>

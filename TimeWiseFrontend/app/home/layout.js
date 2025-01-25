@@ -1,8 +1,10 @@
 
-export default function HomeLayout({ children }) {
+export default function HomeLayout({children}) {
+ 
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body> 
+      {/* Render other user data here */}{children}</body>
     </html>
   );
 }
