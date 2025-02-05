@@ -1,0 +1,1 @@
+TimeWise is a productivity wep app designed for all types of professionals to optimize time management, minimize distractions, and enhance focus. It features secure user authentication, goal setting, to-do lists, progress tracking, reminders, deep work sessions, resource management, and collaborative task tools.
