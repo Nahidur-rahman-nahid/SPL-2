@@ -12,11 +12,11 @@ import java.util.Collections;
 import java.util.Optional;
 
 @Service
-public class MistralAIService {
+public class AIService {
 
     private final MistralAiChatModel chatModel;
 
-    public MistralAIService(
+    public AIService(
             @Value("${spring.ai.mistralai.api-key}") String apiKey,
             @Value("${spring.ai.mistralai.chat.options.model}") String model,
             @Value("${spring.ai.mistralai.chat.options.temperature}") double temperature) {
