@@ -78,7 +78,7 @@ const PreviousSessionsPage = () => {
       <div className="flex flex-col space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <Link href="/session">
+            <Link href="/home/session">
               <Button variant="ghost" className="gap-2">
                 <ArrowLeft size={16} />
                 Back to Sessions
