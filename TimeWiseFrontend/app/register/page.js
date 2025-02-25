@@ -217,7 +217,10 @@ export default function RegisterPage() {
             className="mx-auto mb-4"
           /> */}
           <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
-            Register to TimeWise
+            TimeWise
+          </h1>
+          <h1 className="text-4xl font-bold text-center">
+          Registration
           </h1>
         </div>
 
