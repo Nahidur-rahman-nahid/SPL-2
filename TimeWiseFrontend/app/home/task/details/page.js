@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from 'react-toastify';
-import { format } from "date-fns";
+import { toast } from "react-toastify";
+import { format, previousDay } from "date-fns";
 import {
   Card,
   CardContent,
@@ -50,6 +50,7 @@ import {
   RefreshCcw,
   ListTodo,
   History,
+  Target,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -72,7 +73,7 @@ const TaskPage = ({ taskId }) => {
   const [newTodo, setNewTodo] = useState("");
   const [newNote, setNewNote] = useState("");
   const router = useRouter();
-  const [error, setError] = useState(null); 
+  const [error, setError] = useState(null);
 
   // Form state
   const [editedTask, setEditedTask] = useState({
@@ -83,6 +84,7 @@ const TaskPage = ({ taskId }) => {
     taskDeadline: "",
     taskGoal: "",
     taskCurrentProgress: 0,
+    previousTaskName: "",
   });
 
   useEffect(() => {
@@ -116,14 +118,17 @@ const TaskPage = ({ taskId }) => {
     fetchTask();
   }, []);
 
-  const handleSaveTask = async () => {
+  const handleModifyTask = async () => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: "PUT",
+      const response = await fetch(`/api/tasks/modify`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(editedTask),
+        body: JSON.stringify({
+          ...editedTask,
+          previousTaskName: task.taskName,
+        }),
       });
 
       if (!response.ok) throw new Error("Failed to update task");
@@ -198,55 +203,57 @@ const TaskPage = ({ taskId }) => {
   };
 
   const handleAddTodo = async () => {
-  if (!newTodo.trim()) return;
+    if (!newTodo.trim()) return;
 
-  try {
-    
-    const todoData = {
-      taskName: task.taskName,
-      taskOwner: task.taskOwner,
-      taskTodo: newTodo
-    };
+    try {
+      const todoData = {
+        taskName: task.taskName,
+        taskOwner: task.taskOwner,
+        taskTodo: newTodo,
+      };
 
-    const response = await fetch('/api/tasks/todo/add', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(todoData),
-    });
-  
-    if (!response.ok) {
-      const errorData = await response.json();
-      const errorMessage = errorData.error || errorData.message || 'Failed to add todo item';
-      throw new Error(errorMessage);
+      const response = await fetch("/api/tasks/todo/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(todoData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        const errorMessage =
+          errorData.error || errorData.message || "Failed to add todo item";
+        throw new Error(errorMessage);
+      }
+
+      const updatedTask = await response.json();
+      setTask(updatedTask);
+      setNewTodo("");
+    } catch (error) {
+      console.error("Error adding todo:", error);
+      setError({
+        message:
+          error.message ||
+          "An unexpected error occurred while adding your todo item.",
+        actionRequired:
+          "Please try again or contact support if the problem persists.",
+      });
+
+      toast.error(`Failed to add todo: ${error.message}`, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+
+      // Log to monitoring service (if available)
+      if (typeof errorLoggingService !== "undefined") {
+        errorLoggingService.logError("todo_creation_failure", error);
+      }
     }
-    
-    const updatedTask = await response.json();
-    setTask(updatedTask);
-    setNewTodo("");
-    
-  } catch (error) {
-    console.error("Error adding todo:", error);
-    setError({
-      message: error.message || 'An unexpected error occurred while adding your todo item.',
-      actionRequired: 'Please try again or contact support if the problem persists.',
-    });
-    
-    toast.error(`Failed to add todo: ${error.message}`, {
-      position: "top-right",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-    });
-    
-    // Log to monitoring service (if available)
-    if (typeof errorLoggingService !== 'undefined') {
-      errorLoggingService.logError('todo_creation_failure', error);
-    }
-  }
-};
+  };
   const handleUpdateTaskTodoStatus = async (todo) => {
     if (updatingTodo) return;
     setUpdatingTodo(true);
@@ -279,6 +286,12 @@ const TaskPage = ({ taskId }) => {
     } finally {
       setUpdatingTodo(false);
     }
+  };
+  const handleEditMode = () => {
+    setEditedTask({
+      ...task,
+    });
+    setEditMode(!editMode);
   };
   const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
@@ -323,40 +336,43 @@ const TaskPage = ({ taskId }) => {
               {format(new Date(task.taskCreationDate), "PPP")}
             </p>
           </div>
-          <div className="flex space-x-2 dark:bg-gray-800">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setEditMode(!editMode)}
-                  >
-                    {editMode ? <X /> : <Edit />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {editMode ? "Cancel Editing" : "Edit Task"}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            {editMode && (
+          {task.taskOwner ===
+            JSON.parse(localStorage.getItem("TimeWiseUserData")).userName && (
+            <div className="flex space-x-2 dark:bg-gray-800">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      variant="default"
+                      variant="outline"
                       size="icon"
-                      onClick={handleSaveTask}
+                      onClick={handleEditMode}
                     >
-                      <Save />
+                      {editMode ? <X /> : <Edit />}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Save Changes</TooltipContent>
+                  <TooltipContent>
+                    {editMode ? "Cancel Editing" : "Edit Task"}
+                  </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-            )}
-          </div>
+              {editMode && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="default"
+                        size="icon"
+                        onClick={handleModifyTask}
+                      >
+                        <Save />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Save Changes</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-3 gap-4">
@@ -382,7 +398,20 @@ const TaskPage = ({ taskId }) => {
                           }
                         />
                       </div>
-                      <div className="space-y-2 dark:bg-gray-600">
+                      <div className="space-y-2">
+                        <Label htmlFor="taskGoal">Task Goal</Label>
+                        <Input
+                          id="taskGoal"
+                          value={editedTask.taskGoal}
+                          onChange={(e) =>
+                            setEditedTask({
+                              ...editedTask,
+                              taskGoal: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
                         <Label htmlFor="taskDescription">Description</Label>
                         <Textarea
                           id="taskDescription"
@@ -393,9 +422,10 @@ const TaskPage = ({ taskId }) => {
                               taskDescription: e.target.value,
                             })
                           }
+                          className="resize-vertical  dark:bg-black" // Changed to bg-black dark:bg-black
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="taskCategory">Category</Label>
                           <Select
@@ -407,10 +437,11 @@ const TaskPage = ({ taskId }) => {
                               })
                             }
                           >
-                            <SelectTrigger>
+                            <SelectTrigger id="taskCategory">
                               <SelectValue placeholder="Select category" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="max-h-80">
+                              <SelectItem value="General">General</SelectItem>
                               <SelectItem value="Development">
                                 Development
                               </SelectItem>
@@ -419,9 +450,79 @@ const TaskPage = ({ taskId }) => {
                                 Marketing
                               </SelectItem>
                               <SelectItem value="Research">Research</SelectItem>
+                              <SelectItem value="QA">QA & Testing</SelectItem>
+                              <SelectItem value="Documentation">
+                                Documentation
+                              </SelectItem>
+                              <SelectItem value="DevOps">DevOps</SelectItem>
+                              <SelectItem value="Planning">Planning</SelectItem>
+                              <SelectItem value="Support">
+                                Customer Support
+                              </SelectItem>
+                              <SelectItem value="Administrative">
+                                Administrative
+                              </SelectItem>
+                              <SelectItem value="Finance">
+                                Finance & Accounting
+                              </SelectItem>
+                              <SelectItem value="HR">
+                                Human Resources
+                              </SelectItem>
+                              <SelectItem value="Training">Training</SelectItem>
+                              <SelectItem value="Analytics">
+                                Analytics & Data
+                              </SelectItem>
+                              <SelectItem value="Legal">Legal</SelectItem>
+                              <SelectItem value="Infrastructure">
+                                Infrastructure
+                              </SelectItem>
+                              <SelectItem value="Security">Security</SelectItem>
+                              <SelectItem value="ContentCreation">
+                                Content Creation
+                              </SelectItem>
+                              <SelectItem value="ProductManagement">
+                                Product Management
+                              </SelectItem>
+                              <SelectItem value="UXResearch">
+                                UX Research
+                              </SelectItem>
+                              <SelectItem value="SEO">SEO</SelectItem>
+                              <SelectItem value="SocialMedia">
+                                Social Media
+                              </SelectItem>
+                              <SelectItem value="BusinessDevelopment">
+                                Business Development
+                              </SelectItem>
+                              <SelectItem value="Maintenance">
+                                Maintenance
+                              </SelectItem>
+                              <SelectItem value="Compliance">
+                                Compliance
+                              </SelectItem>
+                              <SelectItem value="CustomerSuccess">
+                                Customer Success
+                              </SelectItem>
+                              <SelectItem value="ProjectManagement">
+                                Project Management
+                              </SelectItem>
+                              <SelectItem value="Sales">Sales</SelectItem>
+                              <SelectItem value="Innovation">
+                                Innovation & R&D
+                              </SelectItem>
+                              <SelectItem value="Onboarding">
+                                Onboarding
+                              </SelectItem>
+                              <SelectItem value="Procurement">
+                                Procurement
+                              </SelectItem>
+                              <SelectItem value="Events">Events</SelectItem>
+                              <SelectItem value="Translation">
+                                Translation & Localization
+                              </SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
                             </SelectContent>
                           </Select>
-                        </div>
+                        </div>{" "}
                         <div className="space-y-2">
                           <Label htmlFor="taskPriority">Priority</Label>
                           <Select
@@ -433,7 +534,7 @@ const TaskPage = ({ taskId }) => {
                               })
                             }
                           >
-                            <SelectTrigger>
+                            <SelectTrigger id="taskPriority">
                               <SelectValue placeholder="Select priority" />
                             </SelectTrigger>
                             <SelectContent>
@@ -443,23 +544,58 @@ const TaskPage = ({ taskId }) => {
                             </SelectContent>
                           </Select>
                         </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="taskVisibility">Visibility</Label>
+                          <Select
+                            value={editedTask.taskVisibilityStatus}
+                            onValueChange={(value) =>
+                              setEditedTask({
+                                ...editedTask,
+                                taskVisibilityStatus: value,
+                              })
+                            }
+                          >
+                            <SelectTrigger id="taskVisibility">
+                              <SelectValue placeholder="Select visibility" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Public">Public</SelectItem>
+                              <SelectItem value="Private">Private</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="flex items-center space-x-2">
-                        <Badge className={getPriorityColor(task.taskPriority)}>
-                          {task.taskPriority} Priority
-                        </Badge>
-                        <Badge variant="outline">
-                          <Folder className="w-4 h-4 mr-1" />
-                          {task.taskCategory}
-                        </Badge>
-                      </div>
-                      <p className="text-gray-600 dark:text-gray-300">
-                        {task.taskDescription}
-                      </p>
-                    </>
+  {/* Task Metadata - Priority, Category, Visibility */}
+  <div className="flex items-center space-x-2 mb-3">
+    <Badge className={`px-2 py-0.5 rounded text-xs font-medium ${getPriorityColor(task.taskPriority)}`}>
+      {task.taskPriority} Priority
+    </Badge>
+    <Badge variant="outline" className="flex items-center gap-2 px-2 py-0.5 rounded text-xs">
+      <Folder className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+      <span className="text-gray-700 dark:text-gray-300">{task.taskCategory}</span>
+    </Badge>
+    <Badge variant="secondary" className="px-2 py-0.5 rounded text-xs">
+      {task.taskVisibilityStatus}
+    </Badge>
+  </div>
+
+  {/* Goal Section */}
+  <p className="flex items-center text-gray-800 dark:text-gray-300 font-medium mb-1">
+    <Target className="w-5 h-5 text-green-600 dark:text-green-400 mr-2" />
+    <span className="text-indigo-700 dark:text-indigo-300">Goal:</span> &nbsp;{task.taskGoal}
+  </p>
+
+  {/* Description Section */}
+  <p className="flex items-center text-gray-800 dark:text-gray-300 font-medium">
+    <FileText className="w-5 h-5 text-red-600 dark:text-red-400 mr-2" />
+    <span className="text-indigo-700 dark:text-indigo-300">Description:</span> &nbsp;{task.taskDescription}
+  </p>
+</>
+
+
                   )}
                 </div>
               </CardContent>
@@ -536,66 +672,63 @@ const TaskPage = ({ taskId }) => {
               </TabsContent>
 
               <TabsContent value="todos">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Todo List</CardTitle>
-                    <CardDescription>Track subtasks and todos</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex space-x-2">
-                        <Input
-                          placeholder="Add a todo..."
-                          value={newTodo}
-                          onChange={(e) => setNewTodo(e.target.value)}
-                        />
-                        <Button onClick={handleAddTodo}>Add</Button>
-                      </div>
-                      <ScrollArea className="h-[400px] pr-4">
-                        {task.taskTodos &&
-                          task.taskTodos.map((todo) => (
-                            <div
-                              key={todo.description}
-                              className="flex items-center justify-between py-2"
-                            >
-                              {" "}
-                              {/* Added justify-between and padding */}
-                              <span className="text-sm">
-                                {" "}
-                                {/* Display the todo description */}
-                                {todo.description}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleUpdateTaskTodoStatus(todo)}
-                                disabled={updatingTodo}
-                              >
-                                {todo.status === "Complete" ? (
-                                  <Check className="h-4 w-4 text-green-500" /> // Green checkmark
-                                ) : (
-                                  <Circle className="h-4 w-4 text-gray-400" /> // Gray circle for incomplete
-                                  // Or <X className="h-4 w-4 text-red-500" /> for a red cross
-                                )}
-                              </Button>
-                            </div>
-                          ))}
-                      </ScrollArea>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+  <Card>
+    <CardHeader>
+      <CardTitle>Todo List</CardTitle>
+      <CardDescription>Track subtasks and todos</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="space-y-4">
+        <div className="flex space-x-2">
+          <Input
+            placeholder="Add a todo..."
+            value={newTodo}
+            onChange={(e) => setNewTodo(e.target.value)}
+          />
+          <Button onClick={handleAddTodo}>Add</Button>
+        </div>
+        <ScrollArea className="h-[400px] pr-4">
+          {task.taskTodos &&
+            task.taskTodos.map((todo) => (
+              <div
+                key={todo.description}
+                className="flex items-center justify-between py-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm">
+                    {todo.description}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {format(new Date(todo.timestamp), "PPp")}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleUpdateTaskTodoStatus(todo)}
+                  disabled={updatingTodo}
+                >
+                  {todo.status === "Complete" ? (
+                    <Check className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <Circle className="h-4 w-4 text-gray-400" />
+                  )}
+                </Button>
+              </div>
+            ))}
+        </ScrollArea>
+      </div>
+    </CardContent>
+  </Card>
+</TabsContent>
 
               <TabsContent value="notes">
                 <Card>
                   <CardHeader>
-                     <CardTitle>Notes</CardTitle>
-                    {" "}
+                    <CardTitle>Notes</CardTitle>{" "}
                     <CardDescription>
-                   Personal notes and reminders
-                      {" "}
-                    </CardDescription>
-                    {" "}
+                      Personal notes and reminders{" "}
+                    </CardDescription>{" "}
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -620,7 +753,7 @@ const TaskPage = ({ taskId }) => {
                                 {notes.map((note, index) => (
                                   <div
                                     key={index}
-                                    className="mb-2 p-3 rounded-lg bg-teal-200 dark:bg-gray-800"
+                                    className="mb-2 p-3 rounded-lg bg-black dark:bg-black" // Changed to bg-black and dark:bg-black
                                   >
                                     <div className="flex justify-between items-center mb-1">
                                       <span className="text-sm text-gray-500">
@@ -701,61 +834,48 @@ const TaskPage = ({ taskId }) => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  {editMode ? (
-                    <div className="space-y-2">
-                      <Label htmlFor="taskProgress">Progress (%)</Label>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Progress</span>
+                      <span>{task.taskCurrentProgress}%</span>
+                    </div>
+                    <Progress value={task.taskCurrentProgress} />
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-sm font-medium">Deadline</span>
+                    </div>
+                    {" "}
+                    {editMode ? (
                       <Input
-                        id="taskProgress"
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={editedTask.taskCurrentProgress}
+                        type="datetime-local"
+                        value={
+                          editedTask.taskDeadline
+                            ? new Date(editedTask.taskDeadline)
+
+                                .toISOString()
+
+                                .slice(0, 16)
+                            : ""
+                        }
                         onChange={(e) =>
                           setEditedTask({
                             ...editedTask,
-                            taskCurrentProgress: parseInt(e.target.value),
+
+                            taskDeadline: new Date(e.target.value),
                           })
                         }
                       />
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Progress</span>
-                        <span>{task.taskCurrentProgress}%</span>
-                      </div>
-                      <Progress value={task.taskCurrentProgress} />
-                    </div>
-                  )}
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Deadline</span>
-                      {editMode ? (
-                        <Input
-                          type="datetime-local"
-                          value={
-                            editedTask.taskDeadline
-                              ? new Date(editedTask.taskDeadline)
-                                  .toISOString()
-                                  .slice(0, 16)
-                              : ""
-                          }
-                          onChange={(e) =>
-                            setEditedTask({
-                              ...editedTask,
-                              taskDeadline: new Date(e.target.value),
-                            })
-                          }
-                        />
-                      ) : (
-                        <span className="text-sm text-gray-500">
-                          {task.taskDeadline
-                            ? format(new Date(task.taskDeadline), "PPp")
-                            : "No deadline set"}
-                        </span>
-                      )}
-                    </div>
+                    ) : (
+                      <span className="text-sm text-gray-500">
+                        {" "}
+                        {task.taskDeadline
+                          ? format(new Date(task.taskDeadline), "PPp")
+                          : "No deadline set"}
+                        {" "}
+                      </span>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -835,7 +955,6 @@ const TaskPage = ({ taskId }) => {
                           <SelectContent>
                             <SelectItem value="Public">Public</SelectItem>
                             <SelectItem value="Private">Private</SelectItem>
-                            <SelectItem value="Team">Team Only</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

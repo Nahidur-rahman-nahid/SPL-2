@@ -3,7 +3,6 @@ package com.TimeWise.model;
 import lombok.*;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.text.ParseException;
@@ -60,54 +59,37 @@ public class Task {
 
     public void modifyTaskAttribute(String fieldName, String updatedBy, Object newValue) {
         Object previousValue;
+        String entityChanged;
         switch (fieldName) {
-            case "taskCurrentProgress":
-                if (newValue instanceof String) {
-                    try {
-                        // Try to parse the string to an integer
-                        int progress = Integer.parseInt((String) newValue);
-                        if (progress < 0 || progress > 100) {
-                            throw new IllegalArgumentException("taskCurrentProgress must be an Integer between 0 and 100.");
-                        }
-                        previousValue = this.taskCurrentProgress;
-                        this.taskCurrentProgress = progress;
-                    } catch (NumberFormatException e) {
-                        throw new IllegalArgumentException("taskCurrentProgress must be a valid integer.");
-                    }
-                } else if (newValue instanceof Integer) {
-                    int progress = (Integer) newValue;
-                    if (progress < 0 || progress > 100) {
-                        throw new IllegalArgumentException("taskCurrentProgress must be an Integer between 0 and 100.");
-                    }
-                    previousValue = this.taskCurrentProgress;
-                    this.taskCurrentProgress = progress;
-                } else {
-                    throw new IllegalArgumentException("taskCurrentProgress must be a valid integer or string representing an integer.");
-                }
-                break;
             case "taskName":
                 previousValue = this.taskName;
                 this.taskName = (String) newValue;
+                entityChanged="Task Name";
                 break;
             case "taskCategory":
                 previousValue = this.taskCategory;
                 this.taskCategory = (String) newValue;
+                entityChanged="Task Category";
                 break;
             case "taskDescription":
                 previousValue = this.taskDescription;
                 this.taskDescription = (String) newValue;
+                entityChanged="Task Description";
                 break;
             case "taskPriority":
                 previousValue = this.taskPriority;
                 this.taskPriority = (String) newValue;
+                entityChanged="Task Priority";
                 break;
             case "taskVisibilityStatus":
                 previousValue = this.taskVisibilityStatus;
                 this.taskVisibilityStatus = (String) newValue;
+                entityChanged="Task Visibility Status";
                 break;
             case "taskGoal":
                 previousValue = this.taskGoal;
                 this.taskGoal = (String) newValue;
+                entityChanged="Task Goal";
                 break;
             case "taskDeadline":
                 if (newValue instanceof String) {
@@ -124,14 +106,21 @@ public class Task {
                 } else {
                     throw new IllegalArgumentException("taskDeadline must be a Date or a valid date string.");
                 }
+                entityChanged="Task Deadline";
                 break;
             default:
                 throw new IllegalArgumentException("Field name not recognized for modification.");
         }
 
         // Log the modification
-        TaskModification modification = new TaskModification(new Date(), fieldName, updatedBy, previousValue, newValue);
+        TaskModification modification = new TaskModification(new Date(), entityChanged, updatedBy, previousValue, newValue);
         this.taskModificationHistory.add(modification);
+    }
+
+    public void addTaskTodoModificationHistory(String updatedBy,String changeDescription,String oldStatus,String currentStatus){
+        TaskModification modification = new TaskModification(new Date(), changeDescription, updatedBy, oldStatus, currentStatus);
+        this.taskModificationHistory.add(modification);
+
     }
 
 

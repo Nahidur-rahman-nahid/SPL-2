@@ -6,7 +6,8 @@ import org.bson.types.ObjectId;
 
 @Getter
 @Setter
-public class AddTaskTodoRequestBody {
-    private ObjectId taskId;
+public class TaskTodoRequestBody {
+    private String taskName;
+    private String taskOwner;
     private String taskTodo;
 }

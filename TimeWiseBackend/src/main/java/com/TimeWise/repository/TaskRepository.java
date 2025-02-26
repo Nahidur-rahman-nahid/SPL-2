@@ -39,4 +39,6 @@ public interface TaskRepository extends MongoRepository<Task, ObjectId> {
     Long countByTaskParticipantsContainsAndTaskCurrentProgress(String userName, int i);
 
     Long countByTaskParticipantsContains(String userName);
+
+    void deleteByTaskIdAndTaskOwner(ObjectId taskId, String userName);
 }

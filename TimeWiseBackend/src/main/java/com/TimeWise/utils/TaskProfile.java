@@ -9,12 +9,11 @@ import java.util.Set;
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public  class TaskDetailResponse {
+    public  class TaskProfile {
         private String taskName;
         private String taskCategory;
         private Date taskCreationDate;
-        private String taskOwner;
+        private String taskDescription;
         private String taskGoal;
-        private Set<String> taskParticipants;
     }
 

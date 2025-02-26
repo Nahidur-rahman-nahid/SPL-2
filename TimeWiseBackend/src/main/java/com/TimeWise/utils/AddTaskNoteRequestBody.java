@@ -8,6 +8,7 @@ import org.bson.types.ObjectId;
 @Getter
 @Setter
 public class AddTaskNoteRequestBody {
-    private ObjectId taskId;
+    private String taskName;
+    private String taskOwner;
     private String taskNote;
 }

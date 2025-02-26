@@ -1,17 +1,12 @@
 package com.TimeWise.controller;
 
 import com.TimeWise.model.Task;
-import com.TimeWise.utils.AddTaskCommentRequestBody;
-import com.TimeWise.utils.AddTaskNoteRequestBody;
-import com.TimeWise.utils.AddTaskTodoRequestBody;
-import com.TimeWise.utils.TaskModificationRequestBody;
+import com.TimeWise.utils.*;
 import com.TimeWise.service.TaskService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,119 +21,81 @@ public class TaskController {
     // Create Task
     @PostMapping("/create")
     public ResponseEntity<?> createTask(@RequestBody List<Task> tasks) {
-        List<Task> createdTasks = taskService.createTask(tasks);
-        return ResponseEntity.ok(createdTasks);
+        return taskService.createTask(tasks);
+    }
+    // Create Task
+    @PostMapping("/todo/status")
+    public ResponseEntity<?> updateTaskTodoStatus(@RequestBody TaskTodoStatusModificationRequestBody taskTodoStatusModificationRequestBody) {
+        return taskService.updateTaskTodoStatus(taskTodoStatusModificationRequestBody);
     }
 
     // Get all tasks of a User
     @GetMapping("/all")
     public ResponseEntity<?> allTasks() {
 
-        List<Task> tasks = taskService.getAllTasksOfAnUser();
-        if(tasks==null || tasks.isEmpty()){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No tasks found");
+        return taskService.getAllTasksSummaryOfAnUser();
 
-        }
-        return ResponseEntity.ok(tasks);
     }
 
-    // Get all tasks sorted on priority (high, normal, low)
-    @GetMapping("/all/sort/priority")
-    public ResponseEntity<?> allTasksSortedByPriority() {
+    // Get a tasks details
+    @GetMapping("/details")
+    public ResponseEntity<?> taskDetails(@RequestParam String taskName,@RequestParam String taskOwner) {
 
-        List<Task> tasks = taskService.getAllTasksOfAnUserSortedByPriority();
-        if(tasks==null || tasks.isEmpty()){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No tasks found");
+        return taskService.getTaskDetails(taskName,taskOwner);
 
-        }
-        return ResponseEntity.ok(tasks);
-    }
-
-    // Get all tasks sorted on deadline
-    @GetMapping("/all/sort/deadline")
-    public ResponseEntity<?> allTasksSortedByDeadline() {
-
-        List<Task> tasks = taskService.getAllTasksOfAnUserSortedByDeadline();
-        if(tasks==null || tasks.isEmpty()){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No tasks found");
-
-        }
-        return ResponseEntity.ok(tasks);
-    }
-
-    // Get all tasks sorted on progress
-    @GetMapping("/all/sort/progress")
-    public ResponseEntity<?> allTasksSortedByProgress() {
-
-        List<Task> tasks = taskService.getAllTasksOfAnUserSortedByProgress();
-        if(tasks==null || tasks.isEmpty()){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No tasks found");
-
-        }
-        return ResponseEntity.ok(tasks);
-    }
-
-    // Get all tasks sorted on progress
-    @GetMapping("/all/sort/goal")
-    public ResponseEntity<?> allTasksSortedByGoal() {
-
-        List<Task> tasks = taskService.getAllTasksOfAnUserSortedByGoal();
-        if(tasks==null || tasks.isEmpty()){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No tasks found");
-
-        }
-        return ResponseEntity.ok(tasks);
     }
 
     // Delete Task
     @PostMapping("/delete")
-    public ResponseEntity<?> deleteTask(@RequestParam String taskName) {
+    public ResponseEntity<?> deleteTask(@RequestParam ObjectId taskId) {
 
-        return ResponseEntity.ok(taskService.deleteTask(taskName));
+        return taskService.deleteTask(taskId);
     }
 
     // Add Task Comment
-    @PostMapping("/add/comment")
-    public ResponseEntity<Task> addTaskComment(@RequestBody AddTaskCommentRequestBody addTaskCommentRequestBody) {
-        Task updatedTask = taskService.addTaskComment(addTaskCommentRequestBody.getTaskId(), addTaskCommentRequestBody.getTaskComment());
-        if (updatedTask != null) {
-            return ResponseEntity.ok(updatedTask);
-        }
-        return ResponseEntity.badRequest().body(null);
+    @PostMapping("/comment/add")
+    public ResponseEntity<?> addTaskComment(@RequestBody AddTaskCommentRequestBody requestBody) {
+        return taskService.addTaskComment(requestBody.getTaskName(),requestBody.getTaskOwner(), requestBody.getTaskComment());
+
+    }
+
+    @PostMapping("/comment/delete")
+    public ResponseEntity<?> deleteTaskComment(@RequestBody DeleteTaskCommentRequestBody requestBody) {
+        return taskService.deleteTaskComment(requestBody.getTaskName(), requestBody.getTaskOwner(), requestBody.getTaskComment());
     }
 
     // Add Task Note
-    @PostMapping("/add/note")
-    public ResponseEntity<Task> addTaskNote(@RequestBody AddTaskNoteRequestBody addTaskNoteRequestBody) {
-        Task updatedTask = taskService.addTaskNote(addTaskNoteRequestBody.getTaskId(), addTaskNoteRequestBody.getTaskNote());
-        if (updatedTask != null) {
-            return ResponseEntity.ok(updatedTask);
-        }
-        return ResponseEntity.badRequest().body(null);
+    @PostMapping("/note/add")
+    public ResponseEntity<?> addTaskNote(@RequestBody AddTaskNoteRequestBody requestBody) {
+        return taskService.addTaskNote(requestBody.getTaskName(), requestBody.getTaskOwner(),requestBody.getTaskNote());
+
+    }
+    @PostMapping("/note/delete")
+    public ResponseEntity<?> deleteTaskNote(@RequestBody DeleteTaskNoteRequestBody requestBody) {
+        return taskService.deleteTaskNote(requestBody.getTaskName(), requestBody.getTaskOwner(), requestBody.getTaskNote());
     }
 
     // Add Task To Do
-    @PostMapping("/add/todo")
-    public ResponseEntity<Task> addTaskTodo(@RequestBody AddTaskTodoRequestBody addTaskTodoRequestBody) {
-        Task updatedTask = taskService.addTaskTodo(addTaskTodoRequestBody.getTaskId(), addTaskTodoRequestBody.getTaskTodo());
-        if (updatedTask != null) {
-            return ResponseEntity.ok(updatedTask);
-        }
-        return ResponseEntity.badRequest().body(null);
+    @PostMapping("/todo/add")
+    public ResponseEntity<?> addTaskTodo(@RequestBody TaskTodoRequestBody requestBody) {
+        return taskService.addTaskTodo(requestBody.getTaskName(), requestBody.getTaskOwner(),requestBody.getTaskTodo());
+
+    }
+
+    @PostMapping("/todo/delete")
+    public ResponseEntity<?> deleteTaskTodo(@RequestBody TaskTodoStatusModificationRequestBody requestBody) {
+        return taskService.deleteTaskTodo(requestBody.getTaskName(), requestBody.getTaskOwner(), requestBody.getUpdatedTaskTodoStatus());
     }
 
     @PostMapping("/modify")
-    public ResponseEntity<Task> modifyTaskAttribute(@RequestBody TaskModificationRequestBody taskModificationRequestBody) {
-        Task updatedTask = taskService.modifyTaskAttribute(taskModificationRequestBody.getTaskId(), taskModificationRequestBody.getFieldName(), taskModificationRequestBody.getNewValue());
-        if (updatedTask != null) {
-            return ResponseEntity.ok(updatedTask);
-        }
-        return ResponseEntity.badRequest().body(null);
+    public ResponseEntity<?> modifyTaskAttribute(@RequestBody TaskDetailsModificationRequestBody requestBody) {
+
+        return taskService.modifyTaskAttribute(requestBody);
     }
 
-    @GetMapping("/{taskId}")
-    public ResponseEntity<?> getTaskDetails(@PathVariable String taskName,@PathVariable String taskOwner) {
-        return taskService.getTaskDetails(taskName,taskOwner);
+    @GetMapping("/profile")
+    public ResponseEntity<?> getTaskProfile(@RequestParam String taskName,@RequestParam String taskOwner) {
+        return taskService.getTaskProfile(taskName,taskOwner);
     }
 
 

@@ -184,22 +184,74 @@ const CreateTaskForm = () => {
                         <FormItem>
                           <FormLabel>Task Name *</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter task name" className="dark:bg-gray-800" {...field} />
+                            <Input placeholder="Enter task name" className="dark:bg-black" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={control}
+                      name="taskGoal"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Goal</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter task goal" className="dark:bg-black" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
-                    <FormField
+<FormField
                       control={control}
                       name="taskCategory"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Category (e.g. coding,home work,design,marketing)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter task category" className="dark:bg-gray-800" {...field} />
-                          </FormControl>
+                          <FormLabel>Category</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger className="dark:bg-black">
+                              <SelectValue placeholder="Select Category" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-80">
+                                  <SelectItem value="General">General</SelectItem> {/* Make General the first option */}
+                                  <SelectItem value="Development">Development</SelectItem>
+                                  <SelectItem value="Design">Design</SelectItem>
+                                  <SelectItem value="Marketing">Marketing</SelectItem>
+                                  <SelectItem value="Research">Research</SelectItem>
+                                  <SelectItem value="QA">QA & Testing</SelectItem>
+                                  <SelectItem value="Documentation">Documentation</SelectItem>
+                                  <SelectItem value="DevOps">DevOps</SelectItem>
+                                  <SelectItem value="Planning">Planning</SelectItem>
+                                  <SelectItem value="Support">Customer Support</SelectItem>
+                                  <SelectItem value="Administrative">Administrative</SelectItem>
+                                  <SelectItem value="Finance">Finance & Accounting</SelectItem>
+                                  <SelectItem value="HR">Human Resources</SelectItem>
+                                  <SelectItem value="Training">Training</SelectItem>
+                                  <SelectItem value="Analytics">Analytics & Data</SelectItem>
+                                  <SelectItem value="Legal">Legal</SelectItem>
+                                  <SelectItem value="Infrastructure">Infrastructure</SelectItem>
+                                  <SelectItem value="Security">Security</SelectItem>
+                                  <SelectItem value="ContentCreation">Content Creation</SelectItem>
+                                  <SelectItem value="ProductManagement">Product Management</SelectItem>
+                                  <SelectItem value="UXResearch">UX Research</SelectItem>
+                                  <SelectItem value="SEO">SEO</SelectItem>
+                                  <SelectItem value="SocialMedia">Social Media</SelectItem>
+                                  <SelectItem value="BusinessDevelopment">Business Development</SelectItem>
+                                  <SelectItem value="Maintenance">Maintenance</SelectItem>
+                                  <SelectItem value="Compliance">Compliance</SelectItem>
+                                  <SelectItem value="CustomerSuccess">Customer Success</SelectItem>
+                                  <SelectItem value="ProjectManagement">Project Management</SelectItem>
+                                  <SelectItem value="Sales">Sales</SelectItem>
+                                  <SelectItem value="Innovation">Innovation & R&D</SelectItem>
+                                  <SelectItem value="Onboarding">Onboarding</SelectItem>
+                                  <SelectItem value="Procurement">Procurement</SelectItem>
+                                  <SelectItem value="Events">Events</SelectItem>
+                                  <SelectItem value="Translation">Translation & Localization</SelectItem>
+                                  <SelectItem value="Other">Other</SelectItem>
+                                </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -212,7 +264,7 @@ const CreateTaskForm = () => {
                         <FormItem>
                           <FormLabel>Description</FormLabel>
                           <FormControl>
-                            <Textarea placeholder="Enter task description" className="dark:bg-gray-800" {...field} />
+                            <Textarea placeholder="Enter task description" className="dark:bg-black" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -230,7 +282,7 @@ const CreateTaskForm = () => {
                         <FormItem>
                           <FormLabel>Priority</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
-                            <SelectTrigger className="dark:bg-gray-800">
+                            <SelectTrigger className="dark:bg-black">
                               <SelectValue placeholder="Select priority" />
                             </SelectTrigger>
                             <SelectContent>
@@ -251,12 +303,12 @@ const CreateTaskForm = () => {
                         <FormItem>
                           <FormLabel>Visibility Status</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
-                            <SelectTrigger className="dark:bg-gray-800">
+                            <SelectTrigger className="dark:bg-black">
                               <SelectValue placeholder="Select visibility" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="public">Public</SelectItem>
-                              <SelectItem value="private">Private</SelectItem>
+                              <SelectItem value="Public">Public</SelectItem>
+                              <SelectItem value="Private">Private</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -275,7 +327,7 @@ const CreateTaskForm = () => {
                               <Button
                                 variant="outline"
                                 className={cn(
-                                  "w-full justify-start text-left font-normal dark:bg-gray-800",
+                                  "w-full justify-start text-left font-normal dark:bg-black",
                                   !field.value && "text-muted-foreground"
                                 )}
                               >
@@ -297,19 +349,7 @@ const CreateTaskForm = () => {
                       )}
                     />
 
-                    <FormField
-                      control={control}
-                      name="taskGoal"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Goal</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter task goal" className="dark:bg-gray-800" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    
                   </div>
                 )}
 
@@ -328,7 +368,7 @@ const CreateTaskForm = () => {
                                 onClick={addTodo}
                                 variant="outline"
                                 size="sm"
-                                className="dark:bg-gray-800"
+                                className="dark:bg-black"
                               >
                                 <Plus className="h-4 w-4 mr-1" />
                                 Add Todo
