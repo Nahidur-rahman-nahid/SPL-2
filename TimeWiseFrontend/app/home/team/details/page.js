@@ -193,12 +193,12 @@ const HistorySection = ({ history }) => (
 );
 
 const TeamSettings = ({ team, onUpdateTeam, onClose }) => {
-  const [name, setName] = useState(team.teamName);
-  const [description, setDescription] = useState(team.teamDescription);
-  const [visibility, setVisibility] = useState(team.teamVisibilityStatus);
-
+  const [teamName, setTeamName] = useState(team.teamName);
+  const [teamDescription, setTeamDescription] = useState(team.teamDescription);
+  const [teamVisibilityStatus, setTeamVisibilityStatus] = useState(team.teamVisibilityStatus);
+  const previousTeamName=team.teamName;
   const handleSubmit = () => {
-    onUpdateTeam({ name, description, visibility });
+    onUpdateTeam({ teamName, teamDescription, teamVisibilityStatus ,previousTeamName});
     onClose();
   };
 
@@ -206,18 +206,18 @@ const TeamSettings = ({ team, onUpdateTeam, onClose }) => {
     <div className="space-y-4">
       <div className="space-y-2">
         <label className="text-sm font-medium">Team Name</label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} />
+        <Input value={teamName} onChange={(e) => setTeamName(e.target.value)} />
       </div>
       <div className="space-y-2">
         <label className="text-sm font-medium">Description</label>
-        <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+        <Textarea value={teamDescription} onChange={(e) => setTeamDescription(e.target.value)} />
       </div>
       <div className="space-y-2">
         <label className="text-sm font-medium">Visibility</label>
         <div className="flex items-center space-x-2">
           <Switch
-            checked={visibility === 'Public'}
-            onCheckedChange={(checked) => setVisibility(checked ? 'Public' : 'Private')}
+            checked={teamVisibilityStatus === 'Public'}
+            onCheckedChange={(checked) => setTeamVisibilityStatus(checked ? 'Public' : 'Private')}
           />
           <span>{visibility === 'Public' ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />}</span>
         </div>
@@ -241,6 +241,13 @@ export default function TeamDetailsPage({ params }) {
   const [inviteEmail, setInviteEmail] = useState('');
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+   
+    // const [editedTeam, setEditedTeam] = useState({
+    //   teamName: "",
+    //   teamDescription: "",
+    //   teamVisibilityStatus: "",
+    //   previousTeamName: "",
+    // });
 
   useEffect(() => {
     const storedUserData = localStorage.getItem('TimeWiseUserData');
@@ -279,16 +286,16 @@ export default function TeamDetailsPage({ params }) {
 
   const handleSendMessage = async (message) => {
     try {
-      const response = await fetch(`/api/teams/${team.teamName}/chat`, {
+      const response = await fetch(`/api/teams/add/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ teamName: team.teamName, chat: message }), // Correctly pass the payload
       });
-
+  
       if (!response.ok) throw new Error('Failed to send message');
-
+  
       // Refresh team details to get updated chat
       const updatedTeam = await response.json();
       setTeam(updatedTeam);
@@ -300,6 +307,7 @@ export default function TeamDetailsPage({ params }) {
       });
     }
   };
+  
 
   const handleRemoveMember = async (memberToRemove) => {
     try {

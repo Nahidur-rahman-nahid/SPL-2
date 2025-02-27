@@ -57,23 +57,27 @@ public class Team {
             throw new IllegalArgumentException("Only the team owner can update team details.");
         }
         Object previousValue;
+        String entityName;
         switch (fieldName) {
             case "teamName":
                 previousValue = this.teamName;
                 this.teamName = (String) newValue;
+                entityName="Team Name";
                 break;
             case "teamDescription":
                 previousValue = this.teamDescription;
                 this.teamDescription = (String) newValue;
+                entityName="Team Description";
                 break;
             case "teamVisibilityStatus":
                 previousValue = this.teamVisibilityStatus;
                 this.teamVisibilityStatus = (String) newValue;
+                entityName="Team Visibility Status";
                 break;
             default:
                 throw new IllegalArgumentException("Field name not recognized for modification.");
         }
-        logModification("Updated " + fieldName + " from " + previousValue + " to " + newValue + " by " + updatedBy);
+        logModification("Updated " + entityName + " from " + previousValue + " to " + newValue + " by " + updatedBy);
     }
 
     // Add a chat message (any member can add a chat)

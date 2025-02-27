@@ -4,6 +4,10 @@ import com.TimeWise.engine.CollaborationEngine;
 import com.TimeWise.model.Notification;
 import com.TimeWise.model.Team;
 import com.TimeWise.service.TeamService;
+import com.TimeWise.utils.AddTeamChatRequestBody;
+import com.TimeWise.utils.AddTeamTaskRequestBody;
+import com.TimeWise.utils.RemoveTeamTaskRequestBody;
+import com.TimeWise.utils.TeamDetailsModificationRequestBody;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,36 +22,45 @@ public class TeamController {
     @Autowired
     private TeamService teamService;
 
-    // Invite Members to Team
-    @PostMapping("/invite")
-    public String inviteMembersToTeam(@RequestBody Notification notification,
-                                      @RequestParam String from,
-                                      @RequestParam String to) {
-        return CollaborationEngine.sendEmail(notification);
-    }
-
     // Create Team
     @PostMapping("/create")
-    public ResponseEntity<Team> createTeam(@RequestBody Team team) {
-        return ResponseEntity.ok(teamService.createTeam(team));
+    public ResponseEntity<?> createTeam(@RequestBody Team team) {
+        return teamService.createTeam(team);
+    }
+    // Update Team
+    @PostMapping("/update")
+    public ResponseEntity<?> updateTeamDetails(@RequestBody TeamDetailsModificationRequestBody requestBody) {
+        return teamService.updateTeamDetails(requestBody);
     }
 
     // Add Task to Team
-    @PostMapping("/add/task")
-    public ResponseEntity<?> addTaskToTeam(@RequestParam String teamName,
-                                           @RequestParam String taskName) {
-        return ResponseEntity.ok(teamService.addTaskToTeam(teamName, taskName));
+    @PostMapping("/task/add")
+    public ResponseEntity<?> addTaskToTeam(@RequestBody AddTeamTaskRequestBody requestBody) {
+        return teamService.addTaskToTeam(requestBody.getTeamName(), requestBody.getTaskName());
     }
 
     // Remove Task from Team
-    @PostMapping("/remove/task")
-    public ResponseEntity<?> removeTaskFromTeam(@RequestParam String teamName,
-                                                @RequestParam ObjectId taskId) {
-        return ResponseEntity.ok(teamService.removeTaskFromTeam(teamName, taskId));
+    @DeleteMapping("/task/remove")
+    public ResponseEntity<?> removeTaskFromTeam(@RequestBody RemoveTeamTaskRequestBody requestBody) {
+        return teamService.removeTaskFromTeam(requestBody.getTeamName(), requestBody.getTaskName());
     }
 
-    // Remove User from Team
-    @PostMapping("/remove/user")
+    // Invite Members to Team
+    @PostMapping("/user/invite")
+    public ResponseEntity<?> inviteMembers(
+                                                 @RequestParam String teamName,
+                                                 @RequestParam String recipient) {
+        return teamService.inviteMembers(teamName,recipient);
+    }
+    @PutMapping("/invite/response")
+    public ResponseEntity<?> handleInvitationResponse(
+            @RequestParam String teamName,
+            @RequestParam String respondedBy,@RequestParam String response) {
+        return teamService.handleInvitationResponse(teamName,respondedBy,response);
+    }
+
+    // Remove Members from Team
+    @DeleteMapping("/user/remove")
     public ResponseEntity<?> removeUserFromTeam(@RequestParam String teamName,
                                                 @RequestParam String userName) {
         return ResponseEntity.ok(teamService.removeMemberFromTeam(teamName, userName));
@@ -59,15 +72,32 @@ public class TeamController {
         return ResponseEntity.ok(teamService.leaveTeam(teamName));
     }
 
-    // Get Team Details
-    @GetMapping("/{teamName}")
-    public ResponseEntity<?> getTeamDetails(@PathVariable String teamName) {
+    // Get a tasks details
+    @GetMapping("/details")
+    public ResponseEntity<?> getTeamDetails(@RequestParam String teamName) {
+
         return teamService.getTeamDetails(teamName);
+
+    }
+
+    // Get Team Details
+    @GetMapping("/profile")
+    public ResponseEntity<?> getTeamProfile(@RequestParam String teamName) {
+        return teamService.getTeamProfile(teamName);
     }
 
     // Get Teams for a User
-    @GetMapping("/user/{userName}")
-    public ResponseEntity<List<Team>> getTeamsForUser(@PathVariable String userName) {
-        return ResponseEntity.ok(teamService.getTeamsForUser());
+    @GetMapping("/user")
+    public ResponseEntity<?> getTeamsForUser() {
+        return teamService.getTeamsForUser();
+    }
+
+    @PostMapping("/chat/add")
+    public ResponseEntity<?> addTeamChat(@RequestBody AddTeamChatRequestBody addTeamChatRequestBody) {
+        return teamService.addTeamChat(addTeamChatRequestBody.getTeamName(),addTeamChatRequestBody.getChat());
+    }
+    @DeleteMapping("/chat/remove")
+    public ResponseEntity<?> removeTeamChat(@RequestParam String teamName,@RequestBody Team.Chat teamChat) {
+        return teamService.removeTeamChat(teamName,teamChat);
     }
 }
