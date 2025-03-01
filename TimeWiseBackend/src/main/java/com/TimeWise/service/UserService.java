@@ -3,24 +3,14 @@ package com.TimeWise.service;
 import com.TimeWise.engine.CollaborationEngine;
 import com.TimeWise.model.User;
 import com.TimeWise.repository.UserRepository;
-import com.TimeWise.utils.NotificationRequestBody;
 import com.TimeWise.utils.UpdatedUserAccount;
 import com.TimeWise.utils.UserCredentials;
-import com.TimeWise.utils.UserDetailResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -29,13 +19,13 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-   // private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
+    // private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
     // Register a new user and generate a token
     public ResponseEntity<?> initiateRegistration(User user) {
         return SystemService.checkRegistrationCredentialsAndSendRegistrationVerificationCode(user);
     }
-    public ResponseEntity<?> completeRegistration(User user,String code) {
+    public ResponseEntity<?> completeRegistration(User user, String code) {
         return SystemService.verifyVerificationCodeAndCompleteRegistration(user,code);
     }
     public ResponseEntity<?> userLogin(User user) {
@@ -51,42 +41,11 @@ public class UserService {
     }
 
     public ResponseEntity<?> getUserDetails(String userName) {
-       return SystemService.getUserAccountDetails(userName);
+        String  currentUserName= UserCredentials.getCurrentUsername();
+        return SystemService.getUserAccountDetails(currentUserName,userName);
     }
 
-    public ResponseEntity<?> addTodo(String todo) {
-        String  currentUserName= UserCredentials.getCurrentUsername();
-        User user=userRepository.findByUserName(currentUserName);
-        if(user==null){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-        }
-        if(todo.length()<8){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A todo has to minimum 8 character long");
-        }
 
-        if(user.getTodos().contains(todo)){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A similar todo exist");
-        }
-        user.getTodos().add(new User.Todo(todo,"Incomplete"));
-        userRepository.save(user);
-        return ResponseEntity.ok(user.getTodos());
-    }
-    public ResponseEntity<?> addNote(String note) {
-        String  currentUserName= UserCredentials.getCurrentUsername();
-        User user=userRepository.findByUserName(currentUserName);
-        if(user==null){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-        }
-        if(note.length()<8){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A note has to minimum 8 character long");
-        }
-        if(user.getNotes().contains(note)){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A similar note exist");
-        }
-        user.getNotes().add(new User.Note(note,new Date()));
-        userRepository.save(user);
-        return ResponseEntity.ok(user.getNotes());
-    }
 
     public ResponseEntity<?> getUsersPersonalAccountDetails() {
         String  currentUserName= UserCredentials.getCurrentUsername();
@@ -95,8 +54,21 @@ public class UserService {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
         }
         user.setUserId(null);
+        user.setPassword(null);
         return ResponseEntity.ok(user);
     }
+
+    public ResponseEntity<?> updateUserAccountDetails(UpdatedUserAccount updatedUserDetails) {
+        String  currentUserName= UserCredentials.getCurrentUsername();
+        return SystemService.updateUserAccountDetails(currentUserName,updatedUserDetails);
+    }
+
+    public ResponseEntity<?> getAllNotifications() {
+        String  currentUserName= UserCredentials.getCurrentUsername();
+        return CollaborationEngine.getUsersAllNotification(currentUserName);
+    }
+
+
     // Update user details
 
 
@@ -125,9 +97,6 @@ public class UserService {
 //
 //        return ResponseEntity.ok("Password reset successfully.");
 //    }
-
-
-
 
 
 }

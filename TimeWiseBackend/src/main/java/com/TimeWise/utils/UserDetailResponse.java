@@ -1,9 +1,7 @@
 package com.TimeWise.utils;
 
 import lombok.*;
-import org.bson.types.ObjectId;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -17,6 +15,8 @@ public  class UserDetailResponse {
     private String shortBioData;
     private String role;
     private String userStatus;
+    private String accountVisibility;
+    private Set<String> usersFollowing;
     private List<UserTasks> userTasks;
     private List<UserTeams> userTeams;
 
