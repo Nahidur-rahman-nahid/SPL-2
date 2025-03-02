@@ -1,12 +1,10 @@
 package com.TimeWise.controller;
 
-
-import com.TimeWise.engine.CollaborationEngine;
 import com.TimeWise.service.MessageService;
-import com.TimeWise.service.TaskService;
+import com.TimeWise.utils.FeedbackBody;
 import com.TimeWise.utils.MessageBody;
-import com.TimeWise.utils.NotificationRequestBody;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,17 +14,21 @@ public class MessageController {
     @Autowired
     private MessageService messageService;
 
+    @GetMapping("/all")
+    public ResponseEntity<?> getAllMessages() {
+        return messageService.getAllMessages();
+    }
+    @PostMapping("/user/send")
+    public ResponseEntity<?> sendMessageToUser(@RequestBody MessageBody messageBody) {
+        return messageService.sendMessage(messageBody);
+    }
+    @PostMapping("/team/send")
+    public ResponseEntity<?> sendMessageToTeam(@RequestBody MessageBody messageBody) {
+        return messageService.sendMessage(messageBody);
+    }
 
-    @PostMapping("/send/user")
-    public String sendMessageToUser(@RequestBody MessageBody messageBody) {
-        return messageService.sendMessage(messageBody);
-    }
-    @PostMapping("/send/team")
-    public String sendMessageToTeam(@RequestBody MessageBody messageBody) {
-        return messageService.sendMessage(messageBody);
-    }
     @PostMapping("/send/timewise")
-    public String sendMessageToTimeWise(@RequestBody MessageBody messageBody) {
+    public ResponseEntity<?> sendMessageToTimeWise(@RequestBody MessageBody messageBody) {
         return messageService.sendMessage(messageBody);
     }
 }
