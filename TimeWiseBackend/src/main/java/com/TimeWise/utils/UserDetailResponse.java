@@ -2,6 +2,7 @@ package com.TimeWise.utils;
 
 import lombok.*;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -27,7 +28,10 @@ public  class UserDetailResponse {
         private String taskName;
         private String taskOwner;
         private String taskCategory;
+        private String taskPriority;
         private String taskDescription;
+        private Integer taskCurrentProgress;
+        private Date taskDeadline;
         private List<String> subTasks;
     }
 

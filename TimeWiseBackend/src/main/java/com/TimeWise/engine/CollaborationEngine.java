@@ -20,7 +20,6 @@ import java.util.*;
 
 
 @Component
-@EnableAsync
 public class CollaborationEngine {
 
     @Autowired

@@ -3,6 +3,7 @@ package com.TimeWise.service;
 import com.TimeWise.engine.CollaborationEngine;
 import com.TimeWise.model.User;
 import com.TimeWise.repository.UserRepository;
+import com.TimeWise.utils.LoginCredentials;
 import com.TimeWise.utils.UpdatedUserAccount;
 import com.TimeWise.utils.UserCredentials;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,16 +29,16 @@ public class UserService {
     public ResponseEntity<?> completeRegistration(User user, String code) {
         return SystemService.verifyVerificationCodeAndCompleteRegistration(user,code);
     }
-    public ResponseEntity<?> userLogin(User user) {
-        return SystemService.performUserLogin(user);
+    public ResponseEntity<?> userLogin(LoginCredentials loginCredentials) {
+        return SystemService.performUserLogin(loginCredentials);
     }
 
     public ResponseEntity<?> forgotUserCredentials(String userEmail) {
         return SystemService.handleForgotUserCredentials(userEmail);
     }
 
-    public ResponseEntity<?> forgottenAccountVerification(String code,String userEmail) {
-        return SystemService.verifyVerificationCodeForAccountVerification(code,userEmail);
+    public ResponseEntity<?> forgottenAccountVerification(String code,String userEmail,String userName,String updatedPassword) {
+        return SystemService.verifyVerificationCodeForAccountVerification(code,userEmail,userName,updatedPassword);
     }
 
     public ResponseEntity<?> getUserDetails(String userName) {
@@ -65,7 +66,7 @@ public class UserService {
 
     public ResponseEntity<?> getAllNotifications() {
         String  currentUserName= UserCredentials.getCurrentUsername();
-        return CollaborationEngine.getUsersAllNotification(currentUserName);
+        return CollaborationEngine.getAllNotificationsForUser(currentUserName);
     }
 
 

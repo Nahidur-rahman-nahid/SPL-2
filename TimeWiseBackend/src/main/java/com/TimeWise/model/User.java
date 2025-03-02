@@ -20,26 +20,8 @@ public class User {
     private String password;
     private String shortBioData;
     private String role;
-    private String userStatus; // active or inactive(logged out or manual inactive setting)
-    private List<Todo> todos;
-    private List<Note> notes;
+    private String userStatus;
+    private String accountVisibility;
     private Set<String> usersFollowing;
-
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class Todo {
-        private String description;
-        private String status; // complete or incomplete
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class Note {
-        private String description;
-        private Date timeStamp; // complete or incomplete
-    }
 
 }
