@@ -28,6 +28,6 @@ public class PerformanceReport {
     private UsersTaskStatistics usersTaskStatistics;
     private UsersSessionStatistics usersSessionStatistics;
     private UsersFeedbackStatistics usersFeedbackStatistics;
-    private Date reportGeneratedDate; 
+    private Date reportGeneratedDate;
 
 }
