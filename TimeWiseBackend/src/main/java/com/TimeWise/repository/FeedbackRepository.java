@@ -13,5 +13,5 @@ public interface FeedbackRepository extends MongoRepository<Feedback, ObjectId> 
 
     Feedback findByFeedbackId(ObjectId feedbackId);
 
-    List<Feedback> findByFeedbackSenderOrFeedbackRecipient(String currentUser);
+    List<Feedback> findByFeedbackSenderOrFeedbackRecipient(String currentUser,String user);
 }

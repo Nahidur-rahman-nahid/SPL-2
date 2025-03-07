@@ -31,7 +31,7 @@ public class FeedbackService {
     }
     public ResponseEntity<?> getAllFeedbacks() {
         String  currentUser= UserCredentials.getCurrentUsername();
-        List<Feedback> userFeedbacks=feedbackRepository.findByFeedbackSenderOrFeedbackRecipient(currentUser);
+        List<Feedback> userFeedbacks=feedbackRepository.findByFeedbackSenderOrFeedbackRecipient(currentUser,currentUser);
         if (userFeedbacks == null || userFeedbacks.isEmpty()) {
             return ResponseEntity.ok(Collections.emptyList());
         }

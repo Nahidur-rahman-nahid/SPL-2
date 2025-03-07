@@ -15,4 +15,5 @@ public class UsersSessionStatistics {
     private Double averageSessionEfficiency;
     private Integer totalTasksOperated;
     private List<String> sessionNames;
+    private List<Integer> previousSessionsEfficiencyScores;
 }

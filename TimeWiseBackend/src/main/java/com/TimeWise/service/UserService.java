@@ -69,6 +69,24 @@ public class UserService {
         return CollaborationEngine.getAllNotificationsForUser(currentUserName);
     }
 
+    public ResponseEntity<?> getSearchResult(String keyWord) {
+        String  currentUserName= UserCredentials.getCurrentUsername();
+        return SystemService.getSearchResult(currentUserName,keyWord);
+    }
+
+    public ResponseEntity<?> followOrUnfollowUser(String userName) {
+        String  currentUserName= UserCredentials.getCurrentUsername();
+        User user =userRepository.findByUserName(currentUserName);
+        if(user.getUsersFollowing().contains(userName)){
+            user.getUsersFollowing().add(userName);
+        }
+        else{
+            user.getUsersFollowing().remove(userName);
+        }
+        userRepository.save(user);
+        return ResponseEntity.ok("Following Status Changed.");
+    }
+
 
     // Update user details
 

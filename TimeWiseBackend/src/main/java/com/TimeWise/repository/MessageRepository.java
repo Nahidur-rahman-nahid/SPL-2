@@ -16,7 +16,7 @@ public interface MessageRepository extends MongoRepository<Message, ObjectId> {
 
     Long countByRecipientsContainsAndTimeStampAfter(String userName, Date cutoffDate);
 
-    List<Message> findBySenderOrRecipientsContains(String currentUser);
+    List<Message> findBySenderOrRecipientsContains(String currentUser, String user);
 
     List<Message> findByRecipientsContains(String currentUser);
 }

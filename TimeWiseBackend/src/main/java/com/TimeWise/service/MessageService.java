@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class MessageService {
@@ -35,11 +36,20 @@ public class MessageService {
     }
     public ResponseEntity<?> getAllMessages() {
         String currentUser = UserCredentials.getCurrentUsername();
-        List<Message> userMessages = messageRepository.findBySenderOrRecipientsContains(currentUser);
+        List<Message> userMessages = messageRepository.findBySenderOrRecipientsContains(currentUser,currentUser);
 
         if (userMessages == null || userMessages.isEmpty()) {
             return ResponseEntity.ok(Collections.emptyList());
         }
+
+
+        List<Message> updatedMessages = userMessages.stream()
+                .peek(message -> {
+                    message.setMessageStatus("READ");
+                })
+                .collect(Collectors.toList());
+
+        messageRepository.saveAll(updatedMessages);
 
         return ResponseEntity.ok(userMessages);
     }

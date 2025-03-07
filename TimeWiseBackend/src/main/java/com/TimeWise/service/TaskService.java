@@ -292,23 +292,13 @@ public class TaskService {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Request body is empty");
         }
 
-        Task task = taskRepository.findByTaskNameAndTaskOwner(requestBody.getPreviousTaskName(), updatedBy);
+        Task task = taskRepository.findByTaskNameAndTaskOwner(requestBody.getTaskName(), updatedBy);
 
         if (task == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not the owner of that task.");
         }
 
-        String taskName = requestBody.getTaskName();
-        if (taskName != null && !taskName.equals(task.getTaskName()) && !taskName.trim().isEmpty()) {
-            Task existingTask = taskRepository.findByTaskNameAndTaskOwner(taskName, updatedBy);
-            if (existingTask == null) {
 
-                task.modifyTaskAttribute("taskName", updatedBy, taskName.trim());
-                task.setTaskName(taskName.trim());
-            } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("You already have a task with that task name.");
-            }
-        }
 
         String taskCategory = requestBody.getTaskCategory();
         if (taskCategory != null && !taskCategory.equals(task.getTaskCategory()) && !taskCategory.trim().isEmpty()) {
@@ -485,16 +475,16 @@ public class TaskService {
     }
 
     // Delete a task by task name
-    public ResponseEntity<?> deleteTask(ObjectId taskId) {
+    public ResponseEntity<?> deleteTask(String taskName) {
         String  userName= UserCredentials.getCurrentUsername();
-        Task task=taskRepository.findByTaskIdAndTaskOwner(taskId,userName);
+        Task task=taskRepository.findByTaskNameAndTaskOwner(taskName,userName);
         if(task==null){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("You do not have such task to delete.");
         }
         if(!task.getTaskOwner().equals(userName)){
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not the owner of this task to delete.");
         }
-        taskRepository.deleteByTaskIdAndTaskOwner(taskId,userName);
+        taskRepository.delete(task);
         return CollaborationEngine.removeDeletedTaskFromTeams(task);
     }
 
@@ -593,4 +583,14 @@ public class TaskService {
     }
 
 
+    public ResponseEntity<?> inviteMembers(String taskName, String recipient) {
+        String sender= UserCredentials.getCurrentUsername();
+        return CollaborationEngine.handleTaskParticipatingInvitation(taskName,sender,recipient);
+    }
+
+    public ResponseEntity<?> handleInvitationResponse(String taskName,String taskOwner, String response) {
+        String respondedBy = UserCredentials.getCurrentUsername();
+        return CollaborationEngine.handleTaskParticipatingInvitationResponse(taskName,taskOwner,respondedBy,response);
+
+    }
 }

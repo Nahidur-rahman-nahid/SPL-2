@@ -59,6 +59,15 @@ public class UserController {
     public ResponseEntity<?> getAllNotifications() {
         return userService.getAllNotifications();
     }
+    @GetMapping("/search")
+    public ResponseEntity<?> getSearchResult(@RequestParam String keyWord) {
+        return userService.getSearchResult(keyWord);
+    }
+    @PostMapping("/follow")
+    public ResponseEntity<?> followOrUnfollowUser(@RequestParam String userName) {
+        return userService.followOrUnfollowUser(userName);
+    }
+
 
     @GetMapping("/check")
     public String check() {

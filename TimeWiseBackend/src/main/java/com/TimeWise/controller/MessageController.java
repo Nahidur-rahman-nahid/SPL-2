@@ -18,14 +18,11 @@ public class MessageController {
     public ResponseEntity<?> getAllMessages() {
         return messageService.getAllMessages();
     }
-    @PostMapping("/user/send")
+    @PostMapping("/send")
     public ResponseEntity<?> sendMessageToUser(@RequestBody MessageBody messageBody) {
         return messageService.sendMessage(messageBody);
     }
-    @PostMapping("/team/send")
-    public ResponseEntity<?> sendMessageToTeam(@RequestBody MessageBody messageBody) {
-        return messageService.sendMessage(messageBody);
-    }
+
 
     @PostMapping("/send/timewise")
     public ResponseEntity<?> sendMessageToTimeWise(@RequestBody MessageBody messageBody) {

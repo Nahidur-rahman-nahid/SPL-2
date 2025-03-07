@@ -23,7 +23,22 @@ public class TaskController {
     public ResponseEntity<?> createTask(@RequestBody List<Task> tasks) {
         return taskService.createTask(tasks);
     }
-    // Create Task
+    // Invite Users to Task
+    @PostMapping("/user/invite")
+    public ResponseEntity<?> inviteMembers(
+            @RequestParam String taskName,
+            @RequestParam String recipient) {
+        return taskService.inviteMembers(taskName,recipient);
+    }
+
+    @PutMapping("/user/invite/response")
+    public ResponseEntity<?> handleInvitationResponse(
+            @RequestParam String taskName,
+            @RequestParam String taskOwner,
+            @RequestParam String response) {
+        return taskService.handleInvitationResponse(taskName,taskOwner,response);
+    }
+
     @PostMapping("/todo/status")
     public ResponseEntity<?> updateTaskTodoStatus(@RequestBody TaskTodoStatusModificationRequestBody taskTodoStatusModificationRequestBody) {
         return taskService.updateTaskTodoStatus(taskTodoStatusModificationRequestBody);
@@ -39,17 +54,17 @@ public class TaskController {
 
     // Get a tasks details
     @GetMapping("/details")
-    public ResponseEntity<?> taskDetails(@RequestParam String taskName,@RequestParam String taskOwner) {
+    public ResponseEntity<?> getTaskDetails(@RequestParam String taskName,@RequestParam String taskOwner) {
 
         return taskService.getTaskDetails(taskName,taskOwner);
 
     }
 
     // Delete Task
-    @PostMapping("/delete")
-    public ResponseEntity<?> deleteTask(@RequestParam ObjectId taskId) {
+    @DeleteMapping("/delete")
+    public ResponseEntity<?> deleteTask(@RequestParam String taskName) {
 
-        return taskService.deleteTask(taskId);
+        return taskService.deleteTask(taskName);
     }
 
     // Add Task Comment

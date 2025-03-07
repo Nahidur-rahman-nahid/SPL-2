@@ -13,7 +13,6 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Component
@@ -101,6 +100,7 @@ public class StatisticsEngine {
         double totalEfficiency = 0;
         int totalTasksOperated = 0;
         List<String> sessionNames = new ArrayList<>();
+        List<Integer> previousSessionsEfficiencyScores = new ArrayList<>();
 
         for (Session session : sessions) {
             if (session.getSessionTimeStamp().after(cutoffDate)) {
@@ -109,6 +109,7 @@ public class StatisticsEngine {
                 totalEfficiency += session.getSessionEfficiency();
                 totalTasksOperated += session.getTasksOperated().size();
                 sessionNames.add(session.getSessionGoal());
+                previousSessionsEfficiencyScores.add(session.getSessionEfficiency());
             }
         }
 
@@ -118,16 +119,22 @@ public class StatisticsEngine {
                 totalSessionTime / 60.0, // Convert to hours
                 averageEfficiency,
                 totalTasksOperated,
-                sessionNames
+                sessionNames,
+                previousSessionsEfficiencyScores
         );
     }
 
     public static UsersFeedbackStatistics calculateFeedbackStatistics(String userName, int numberOfDays) {
-        // Find all feedbacks for the user
-        List<Feedback> feedbacks = feedbackRepository.findByFeedbackRecipientsContains(userName);
-
         // Calculate the cutoff date
         Date cutoffDate = calculateCutoffDate(numberOfDays);
+        // Find all feedbacks for the user
+        List<Feedback> feedbacks = feedbackRepository.findByFeedbackRecipient(userName);
+        List<Integer> previousFeedbackScores = new ArrayList<>();
+        for (Feedback feedback : feedbacks) {
+            if (feedback.getTimeStamp().after(cutoffDate)) {
+                previousFeedbackScores.add(feedback.getFeedbackScore());
+            }
+        }
 
         int feedbackCount = 0;
         double totalScore = 0;
@@ -143,7 +150,7 @@ public class StatisticsEngine {
         }
 
         double averageScore = feedbackCount > 0 ? totalScore / feedbackCount : 0;
-        return new UsersFeedbackStatistics(feedbackCount, averageScore, feedbackMessages);
+        return new UsersFeedbackStatistics(feedbackCount, averageScore, feedbackMessages,previousFeedbackScores);
     }
 
 
@@ -183,7 +190,7 @@ public class StatisticsEngine {
                 .count();
 
         // Fetch feedback scores (filtered by cutoff date)
-        List<Feedback> feedbacks = feedbackRepository.findByFeedbackRecipientsContains(userName);
+        List<Feedback> feedbacks = feedbackRepository.findByFeedbackRecipient(userName);
         List<Integer> previousFeedbackScores = new ArrayList<>();
         for (Feedback feedback : feedbacks) {
             if (feedback.getTimeStamp().after(cutoffDate)) {

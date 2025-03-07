@@ -13,4 +13,5 @@ public class UsersFeedbackStatistics {
     private Integer feedbackCount;
     private Double averageFeedbackScore;
     private List<String> feedbackMessages;
+    private List<Integer> previousFeedbackScores;
 }

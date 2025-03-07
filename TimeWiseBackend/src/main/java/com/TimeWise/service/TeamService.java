@@ -25,7 +25,7 @@ public class TeamService {
 
 
     public ResponseEntity<?> createTeam(Team team) {
-        String  createdBy= UserCredentials.getCurrentUsername();
+        String createdBy = UserCredentials.getCurrentUsername();
         if (team.getTeamName() == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Team name is required.");
         }
@@ -71,7 +71,7 @@ public class TeamService {
         // Fetch the team by teamName
         Team team = teamRepository.findByTeamName(teamName);
 
-        if(team==null) {
+        if (team == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Team not found");
         }
         if ("private".equalsIgnoreCase(team.getTeamVisibilityStatus())) {
@@ -96,10 +96,10 @@ public class TeamService {
         String userName = UserCredentials.getCurrentUsername();
         Team team = teamRepository.findByTeamName(teamName);
 
-        if(team==null) {
+        if (team == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Team not found");
         }
-        if(!team.getTeamMembers().contains(userName)){
+        if (!team.getTeamMembers().contains(userName)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Only team members can get team details.");
         }
         team.setTeamId(null);
@@ -109,37 +109,37 @@ public class TeamService {
 
 
     public ResponseEntity<?> addTaskToTeam(String teamName, String taskName) {
-        String  userName= UserCredentials.getCurrentUsername();
-        return CollaborationEngine.addTaskToTeam(userName,teamName,taskName);
+        String userName = UserCredentials.getCurrentUsername();
+        return CollaborationEngine.addTaskToTeam(userName, teamName, taskName);
 
     }
 
     public ResponseEntity<?> removeTaskFromTeam(String teamName, String taskName) {
-        String  userName= UserCredentials.getCurrentUsername();
-        return CollaborationEngine.removeTaskFromTeam(userName,teamName,taskName);
+        String userName = UserCredentials.getCurrentUsername();
+        return CollaborationEngine.removeTaskFromTeam(userName, teamName, taskName);
     }
 
     public ResponseEntity<?> removeMemberFromTeam(String teamName, String userName) {
-        String  teamOwner= UserCredentials.getCurrentUsername();
-        return CollaborationEngine.removeMemberFromTeam(teamOwner,teamName,userName);
+        String teamOwner = UserCredentials.getCurrentUsername();
+        return CollaborationEngine.removeMemberFromTeam(teamOwner, teamName, userName);
     }
 
     public ResponseEntity<?> leaveTeam(String teamName) {
-        String  userName= UserCredentials.getCurrentUsername();
-        return CollaborationEngine.leaveTeam(teamName,userName);
+        String userName = UserCredentials.getCurrentUsername();
+        return CollaborationEngine.leaveTeam(teamName, userName);
 
     }
 
     public ResponseEntity<?> addTeamChat(String teamName, String chat) {
-        String  userName= UserCredentials.getCurrentUsername();
-        Team team=teamRepository.findByTeamName(teamName);
-        if(team==null){
+        String userName = UserCredentials.getCurrentUsername();
+        Team team = teamRepository.findByTeamName(teamName);
+        if (team == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Team not found");
         }
-        if(!team.getTeamMembers().contains(userName)){
+        if (!team.getTeamMembers().contains(userName)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Only team members can add team chat.");
         }
-        team.addTeamChat(userName,chat);
+        team.addTeamChat(userName, chat);
         teamRepository.save(team);
         return ResponseEntity.ok(team);
     }
@@ -171,11 +171,12 @@ public class TeamService {
 
     public ResponseEntity<?> inviteMembers(String teamName, String recipient) {
         String sender = UserCredentials.getCurrentUsername();
-        return CollaborationEngine.handleTeamJoiningInvitation(teamName,sender,recipient);
+        return CollaborationEngine.handleTeamJoiningInvitation(teamName, sender, recipient);
     }
 
-    public ResponseEntity<?> handleInvitationResponse(String teamName, String respondedBy, String response) {
-        return CollaborationEngine.handleTeamJoiningInvitationResponse(teamName,respondedBy,response);
+    public ResponseEntity<?> handleInvitationResponse(String teamName, String response) {
+        String respondedBy = UserCredentials.getCurrentUsername();
+        return CollaborationEngine.handleTeamJoiningInvitationResponse(teamName, respondedBy, response);
     }
 
     public ResponseEntity<?> updateTeamDetails(TeamDetailsModificationRequestBody requestBody) {
@@ -204,7 +205,7 @@ public class TeamService {
         if (teamName != null && !teamName.equals(team.getTeamName()) && !teamName.trim().isEmpty()) {
             Team existingTeam = teamRepository.findByTeamNameAndTeamOwner(teamName, updatedBy);
             if (existingTeam == null) {
-                team.updateTeamDetails(updatedBy,"teamName", teamName);
+                team.updateTeamDetails(updatedBy, "teamName", teamName);
                 team.setTeamName(teamName.trim());
             } else {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("You already have a team with that team name.");
@@ -214,18 +215,31 @@ public class TeamService {
         // Update team description if provided and changed
         String teamDescription = requestBody.getTeamDescription();
         if (teamDescription != null && !teamDescription.equals(team.getTeamDescription())) {
-            team.updateTeamDetails(updatedBy,"teamDescription", teamDescription);
+            team.updateTeamDetails(updatedBy, "teamDescription", teamDescription);
             team.setTeamDescription(teamDescription);
         }
 
         // Update team visibility status if provided and changed
         String teamVisibilityStatus = requestBody.getTeamVisibilityStatus();
         if (teamVisibilityStatus != null && !teamVisibilityStatus.equals(team.getTeamVisibilityStatus()) && !teamVisibilityStatus.trim().isEmpty()) {
-            team.updateTeamDetails(updatedBy,"teamVisibilityStatus", teamVisibilityStatus);
+            team.updateTeamDetails(updatedBy, "teamVisibilityStatus", teamVisibilityStatus);
             team.setTeamVisibilityStatus(teamVisibilityStatus);
         }
 
         teamRepository.save(team);
         return ResponseEntity.ok(team);
     }
+
+
+    public ResponseEntity<?> requestTeamJoining(String teamName) {
+        String sender = UserCredentials.getCurrentUsername();
+        return CollaborationEngine.handleTeamJoiningRequest(sender, teamName);
+
+    }
+
+    public ResponseEntity<?> handleTeamJoiningRequestResponse(String teamName, String respondedTo, String response) {
+        String respondedBy = UserCredentials.getCurrentUsername();
+        return CollaborationEngine.handleTeamJoiningRequestResponse(respondedBy, teamName, respondedTo, response);
+    }
+
 }

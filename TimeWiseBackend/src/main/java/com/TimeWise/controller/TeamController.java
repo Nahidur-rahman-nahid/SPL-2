@@ -45,6 +45,8 @@ public class TeamController {
         return teamService.removeTaskFromTeam(requestBody.getTeamName(), requestBody.getTaskName());
     }
 
+
+
     // Invite Members to Team
     @PostMapping("/user/invite")
     public ResponseEntity<?> inviteMembers(
@@ -52,11 +54,26 @@ public class TeamController {
                                                  @RequestParam String recipient) {
         return teamService.inviteMembers(teamName,recipient);
     }
-    @PutMapping("/invite/response")
+
+    @PutMapping("/user/invite/response")
     public ResponseEntity<?> handleInvitationResponse(
             @RequestParam String teamName,
-            @RequestParam String respondedBy,@RequestParam String response) {
-        return teamService.handleInvitationResponse(teamName,respondedBy,response);
+            @RequestParam String response) {
+        return teamService.handleInvitationResponse(teamName,response);
+    }
+    // Invite Members to Team
+    @PostMapping("/user/join/request")
+    public ResponseEntity<?> requestTeamJoining(
+            @RequestParam String teamName) {
+        return teamService.requestTeamJoining(teamName);
+    }
+
+    @PutMapping("/user/join/request/response")
+    public ResponseEntity<?> handleTeamJoiningRequestResponse(
+            @RequestParam String teamName,
+            @RequestParam String respondedTo,
+           @RequestParam String response) {
+        return teamService.handleTeamJoiningRequestResponse(teamName,respondedTo,response);
     }
 
     // Remove Members from Team

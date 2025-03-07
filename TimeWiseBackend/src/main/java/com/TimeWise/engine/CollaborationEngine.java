@@ -2,21 +2,20 @@ package com.TimeWise.engine;
 
 import com.TimeWise.model.*;
 import com.TimeWise.repository.*;
+import com.TimeWise.service.MailService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Component
@@ -41,15 +40,18 @@ public class CollaborationEngine {
     private FeedbackRepository feedbackRepositoryInstance;
 
     @Autowired
-    private JavaMailSender mailSenderInstance;
+    private MailService mailServiceInstance;
+
+
 
     private static UserRepository userRepository;
-    private static JavaMailSender mailSender;
+
     private static TeamRepository teamRepository;
     private static TaskRepository taskRepository;
     private static NotificationRepository notificationRepository;
     private static MessageRepository messageRepository;
     private static FeedbackRepository feedbackRepository;
+    private static MailService mailService;
 
     private static String timeWiseEmail;
 
@@ -58,11 +60,10 @@ public class CollaborationEngine {
 
 
 
-
     @PostConstruct
     private void initStaticDependencies() {
         userRepository = userRepositoryInstance;
-        mailSender = mailSenderInstance;
+        mailService = mailServiceInstance;
         teamRepository = teamRepositoryInstance;
         taskRepository = taskRepositoryInstance;
         notificationRepository = notificationRepositoryInstance;
@@ -84,15 +85,14 @@ public class CollaborationEngine {
                 break;
 
             case "TEAM_MESSAGE":
-                String teamName = recipient;
-                Team team = teamRepository.findByTeamName(teamName);
+                Team team = teamRepository.findByTeamName(recipient);
                 if (team == null) {
                     return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Recipient team not found.");
                 }
                 if (!team.getTeamMembers().contains(sender)) {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Team does not have any member.");
                 }
-                notification = createNotification(sender, messageSubject, teamName, null, "Message from " + sender + " to team " + recipient + ": " + messageDescription);
+                notification = createNotification(sender, messageSubject, recipient, null, "Message from " + sender + " to team " + recipient + ": " + messageDescription);
                 notification.setRecipients(team.getTeamMembers());
                 break;
             default:
@@ -118,14 +118,7 @@ public class CollaborationEngine {
                         "Feedback from " + sender + " to you: " + feedbackMessage+" Feedback on task \" "+feedbackTaskName+" \" Feedback Score: "+feedbackScore);
 
 
-        Message message = new Message();
-        message.setSender(sender);
-        message.setRecipients(notification.getRecipients());
-        message.setMessageSubject("USER_FEEDBACK");
-        message.setMessageDescription(feedbackMessage);
-        message.setMessageStatus("Unseen");
-        message.setTimeStamp(new Date());
-        messageRepository.save(message);
+
         sendEmail(notification);
         Feedback feedback = Feedback.builder()
                 .feedbackSender(sender)
@@ -167,10 +160,9 @@ public class CollaborationEngine {
         }
         Notification notification = createNotification(sender, subject, teamName, null, messageContent);
         notification.setRecipients(new HashSet<>(team.getTeamMembers()));
-        sendEmail(notification);
-
+        notification.setNotificationStatus("Unseen");
         notificationRepository.save(notification);
-
+        sendEmail(notification);
     }
     public static ResponseEntity<?> handleTeamJoiningInvitation(String teamName, String sender, String recipient) {
         Team team = teamRepository.findByTeamNameAndTeamOwner(teamName, sender);
@@ -204,7 +196,7 @@ public class CollaborationEngine {
 
         notificationRepository.save(notification);
 
-        return ResponseEntity.ok("Team invitation sent successfully");
+        return ResponseEntity.ok(team);
     }
 
     public static ResponseEntity<?> handleTaskParticipatingInvitation(String taskName, String sender, String recipient) {
@@ -229,7 +221,7 @@ public class CollaborationEngine {
 
         task.getInvitedMembers().add(recipient);
         taskRepository.save(task);
-        return ResponseEntity.ok("Task participation invitation sent successfully");
+        return ResponseEntity.ok(task);
 
     }
 
@@ -310,19 +302,33 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
         return ResponseEntity.ok("Response has benn handled.");
     }
     private static void sendMailFromTimeWise(String recipient, String messageSubject, String messageBody) {
-        User user=userRepository.findByUserName(recipient);
+        User user = userRepository.findByUserName(recipient);
+
+        // Create and save notification first
+        Notification notification = new Notification();
+        notification.setSender("TimeWise"); // Sender is TimeWise
+        Set<String> recipients = new HashSet<>();
+        recipients.add(recipient);
+        notification.setRecipients(recipients);
+        notification.setNotificationSubject(messageSubject);
+        notification.setNotificationMessage(messageBody);
+        notification.setNotificationStatus("Unseen"); // Initial status
+        notification.setTimeStamp(new Date());
+
+        notificationRepository.save(notification);
+
+        // Send the email
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(timeWiseEmail);
         message.setTo(user.getUserEmail());
-        message.setSubject(messageSubject.toString());
+        message.setSubject(messageSubject);
         message.setText(messageBody);
-        mailSender.send(message);
-}
+        mailService.sendMessage(message);
+    }
 
-    @Async
-    public static ResponseEntity<?> sendEmail(Notification notification) {
+    public static void sendEmail(Notification notification) {
         StringBuilder emailStatus = new StringBuilder();
-        String timeWiseEmail = "timeWise@webapp.gmail.com"; // TimeWise official email
+        String timeWiseEmail = "bsse1401@iit.du.ac.bd"; // TimeWise official email
 
         // Find all recipients and sender
         List<User> recipients = userRepository.findByUserNameIn(notification.getRecipients());
@@ -331,11 +337,13 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
         // Validate sender details
         if (sender == null || sender.getUserEmail() == null) {
             emailStatus.append("Invalid sender details.");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(emailStatus.toString());
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(emailStatus.toString());
+            return;
         }
         if (recipients.isEmpty()) {
             emailStatus.append("No recipients found for the notification. No emails sent.");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(emailStatus.toString());
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(emailStatus.toString());
+            return;
         }
 
         // Identify missing recipients
@@ -347,7 +355,8 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
         // Handle missing recipients
         if (missingRecipients.size() == notification.getRecipients().size()) {
             emailStatus.append("No valid recipients found for the notification. No emails sent.");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(emailStatus.toString());
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(emailStatus.toString());
+            return;
         } else if (!missingRecipients.isEmpty()) {
             emailStatus.append("The following recipients were not found in the database: ")
                     .append(String.join(", ", missingRecipients))
@@ -374,25 +383,28 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
                         "Stay productive!\n\n" +
                         "Best regards,\n" +
                         "The TimeWise Team");
-                mailSender.send(message);
+                mailService.sendMessage(message);
                 emailStatus.append("Email successfully sent to ").append(recipient.getUserName()).append("\n");
             } catch (Exception e) {
                 emailStatus.append("Failed to send email to ").append(recipient.getUserName())
                         .append(": ").append(e.getMessage()).append("\n");
-                return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(emailStatus.toString());
+                ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(emailStatus.toString());
+                return;
             }
         }
 
-        return ResponseEntity.ok(emailStatus.toString());
+        ResponseEntity.ok(emailStatus.toString());
     }
-    @Async
-    public static ResponseEntity<?> sendProgressAndPerformanceReport(String messageBody,String userName,Boolean isProgressReport) {
+
+    public static void sendProgressAndPerformanceReport(String messageBody, String userName, Boolean isProgressReport) {
         User recipient =userRepository.findByUserName(userName);
         if(recipient==null){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No recipient is selected.");
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body("No recipient is selected.");
+            return;
         }
         if(recipient.getUserEmail()==null){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Recipients email is not given.");
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Recipients email is not given.");
+            return;
         }
         StringBuilder messageSubject=new StringBuilder();
         if(isProgressReport){
@@ -409,20 +421,18 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
             message.setTo(recipient.getUserEmail());
             message.setSubject(messageSubject.toString());
             message.setText(messageBody);
-            mailSender.send(message);
+            mailService.sendMessage(message);
             emailStatus.append("Email successfully sent to ").append(recipient.getUserName()).append("\n");
         } catch (Exception e) {
             emailStatus.append("Failed to send email to ").append(recipient.getUserName())
                     .append(": ").append(e.getMessage()).append("\n");
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(emailStatus.toString());
+            ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(emailStatus.toString());
+            return;
         }
-        return ResponseEntity.ok(emailStatus.toString());
+        ResponseEntity.ok(emailStatus.toString());
 
     }
 
-
-
-    @Async
     public static ResponseEntity<?> sendUserRegistrationVerificationCode(String receiverName, String receiverEmail,String verificationCode) {
 
         StringBuilder emailStatus = new StringBuilder();
@@ -432,7 +442,7 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
             message.setTo(receiverEmail);
             message.setSubject("TimeWise Registration Verification Code");
             message.setText("Your TimeWise account registration verification code is: " + verificationCode + ". It expires in 7 minutes.");
-            mailSender.send(message);
+            mailService.sendMessage(message);
             emailStatus.append("Email successfully sent to user name: ").append(receiverName).append(" user email:").append(receiverEmail).append("\n");
         } catch (Exception e) {
             emailStatus.append("Failed to send email to ").append(receiverName).append(" user email: ").append(receiverEmail)
@@ -442,7 +452,7 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
         return ResponseEntity.ok(emailStatus.toString());
     }
 
-    @Async
+
     public static void sendRegistrationSuccessfulMessage(String receiverName, String receiverEmail) {
         StringBuilder emailStatus = new StringBuilder();
         try {
@@ -451,14 +461,14 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
             message.setTo(receiverEmail);
             message.setSubject("TimeWise Registration Successful");
             message.setText(receiverName+", Welcome to TimeWise! We hope TimeWise will help you be more productive.");
-            mailSender.send(message);
+            mailService.sendMessage(message);
             emailStatus.append("Email successfully sent to user name: ").append(receiverName).append(" user email:").append(receiverEmail).append("\n");
         } catch (Exception e) {
             throw new IllegalArgumentException("Error sending mail to "+receiverName+" with receiver email "+receiverEmail+" about successful registration"+e.getMessage());
         }
 
     }
-    @Async
+
     public static ResponseEntity<?> sendForgottenAccountCredentials(String receiverEmail, String verificationCode, Set<String> userNames) {
         StringBuilder emailStatus = new StringBuilder();
 
@@ -489,7 +499,7 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
             text.append("The TimeWise Support Team");
 
             message.setText(text.toString());
-            mailSender.send(message);
+            mailService.sendMessage(message);
             emailStatus.append("Email successfully sent to user email: ").append(receiverEmail).append("\n");
         } catch (Exception e) {
             emailStatus.append("Failed to send email to user email: ").append(receiverEmail)
@@ -499,9 +509,8 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
         return ResponseEntity.ok(emailStatus.toString());
     }
 
-    @Async
-    public static ResponseEntity<?> sendAccountVerificationCode( String receiverEmail,String verificationCode) {
 
+    public static ResponseEntity<?> sendAccountVerificationCode( String receiverEmail,String verificationCode) {
 
         StringBuilder emailStatus = new StringBuilder();
         try {
@@ -510,7 +519,7 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
             message.setTo(receiverEmail);
             message.setSubject("TimeWise Account Verification Code");
             message.setText("Your TimeWise account verification code is: " + verificationCode + ". It expires in 7 minutes.");
-            mailSender.send(message);
+            mailService.sendMessage(message);
             emailStatus.append("Email successfully sent to user email:").append(receiverEmail).append("\n");
         } catch (Exception e) {
             emailStatus.append("Failed to send email to ").append(" user email: ").append(receiverEmail)
@@ -550,7 +559,7 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
         teamRepository.save(team);
         createTeamNotification(userName,teamName,"NEW_TEAM_TASK_ADDED",message);
 
-        return ResponseEntity.ok("Task added to team");
+        return ResponseEntity.ok(task);
 
     }
 
@@ -573,19 +582,19 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
         task.getTaskParticipants().removeAll(teamMembers);
         task.getTaskParticipants().add(userName);
         taskRepository.save(task);
-        String message="A task named "+task.getTaskName()+"has been removed from the team.";
+        String message="A task named "+task.getTaskName()+"has been removed from the team "+teamName;
         team.getTeamModificationHistories().add(message);
         team.getTeamTasks().remove(task.getTaskName());
         teamRepository.save(team);
         createTeamNotification(userName,teamName,"A_TEAM_TASK_REMOVED",message);
-        return ResponseEntity.ok("Task removed from team.");
+        return ResponseEntity.ok(team);
     }
 
     public static ResponseEntity<?> removeDeletedTaskFromTeams(Task task){
         String taskName=task.getTaskName();
         String taskOwner=task.getTaskOwner();
         Set<String> taskParticipants=task.getTaskParticipants();
-        String message="The task owned by "+taskOwner+" with task name: '" + taskName+"', task goal : '"+task.getTaskGoal()+"' is deleted by the owner : "+taskName;
+        String message="The task owned by "+taskOwner+" with task name: '" + taskName+"', task goal : '"+task.getTaskGoal()+"' is deleted by the owner : "+taskOwner;
         List<Team> teamsHavingTasks=teamRepository.findByTeamOwnerAndTeamTasksContaining(task.getTaskOwner(),taskName);
         if(!teamsHavingTasks.isEmpty()) {
             for (Team team : teamsHavingTasks) {
@@ -624,7 +633,7 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User is not team member");
         }
         team.getTeamMembers().remove(userName);
-        String message="A team member "+userName+"has been removed from the team.";
+        String message="A team member named \""+userName+"\" has been removed from the team.";
         team.getTeamModificationHistories().add(message);
         Notification notification=createNotification(teamOwner,"YOU_GOT_REMOVED_FROM_TEAM",teamName,userName,"You have been removed from the team "+teamName);
         List<Task> tasks=taskRepository.findByTaskOwnerAndTaskNameIn(teamOwner,team.getTeamTasks());
@@ -639,7 +648,7 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
         team.getTeamMembers().remove(userName);
         teamRepository.save(team);
 
-        return ResponseEntity.ok("User removed from the team");
+        return ResponseEntity.ok(team);
 
     }
     public static ResponseEntity<?>  leaveTeam(String teamName, String userName) {
@@ -655,7 +664,7 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("You are the owner of the team and can not leave the team");
         }
         team.getTeamMembers().remove(userName);
-        String message="A team member "+userName+"has left the team.";
+        String message="A team member named \""+userName+"\" has left the team.";
         team.getTeamModificationHistories().add(message);
         Notification notification=createNotification(userName,"A_MEMBER_LEFT_TEAM",teamName,team.getTeamOwner(),"A team member named "+userName+" has left the team "+teamName);
         List<Task> tasks=taskRepository.findByTaskOwnerAndTaskNameIn(team.getTeamOwner(),team.getTeamTasks());
@@ -670,7 +679,7 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
         team.getTeamMembers().remove(userName);
         teamRepository.save(team);
 
-        return ResponseEntity.ok("User left and hence user removed from the team");
+        return ResponseEntity.ok("You successfully left the team.");
 
     }
     public static ResponseEntity<?> handleTeamJoiningRequest(String sender, String teamName) {
@@ -723,6 +732,8 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
 
             team.getTeamMembers().add(respondedTo);
             team.getRequestedToJoinMembers().remove(respondedTo);
+            String message="A team member named \""+respondedTo+"\" has been added to the team.";
+            team.getTeamModificationHistories().add(message);
             teamRepository.save(team);
             sendMailFromTimeWise(respondedBy, "Team Joining Request Accepted", "Your request to join team \"" + teamName + "\" has been accepted.");
         } else if ("decline".equalsIgnoreCase(response)) {
@@ -733,7 +744,7 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Response must be either 'accept' or 'decline'.");
         }
 
-        return ResponseEntity.ok("Team joining request response handled.");
+        return ResponseEntity.ok(team);
     }
     public static ResponseEntity<List<Notification>> getAllNotificationsForUser(String currentUserName) {
         List<Notification> notifications = notificationRepository.findByRecipientsContains(currentUserName);
@@ -742,7 +753,14 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
             return ResponseEntity.ok(Collections.emptyList());
         }
 
-        return ResponseEntity.ok(notifications);
-    }
+        // Update notification status to "Seen" and save to the database
+        List<Notification> updatedNotifications = notifications.stream()
+                .peek(notification -> {
+                    notification.setNotificationStatus("Seen");
+                    notificationRepository.save(notification);
+                })
+                .collect(Collectors.toList());
 
+        return ResponseEntity.ok(updatedNotifications);
+    }
 }

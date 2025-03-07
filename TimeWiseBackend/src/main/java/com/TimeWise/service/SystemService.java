@@ -6,8 +6,11 @@ import com.TimeWise.model.*;
 import com.TimeWise.repository.*;
 import com.TimeWise.utils.*;
 import jakarta.annotation.PostConstruct;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.BasicQuery;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -18,10 +21,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,11 +52,12 @@ public class SystemService {
     @Autowired
     private ProgressReportRepository progressReportRepositoryInstance;
 
-    @Autowired
-    private PerformanceReportRepository performanceReportRepository;
 
     @Autowired
     private UserVerificationMessageRepository userVerificationMessageRepositoryInstance;
+
+    @Autowired
+    private MongoTemplate mongoTemplateInstance;
 
     private static JWTService jwtService;
     private static AuthenticationManager authManager;
@@ -59,8 +66,11 @@ public class SystemService {
     private static TeamRepository teamRepository;
     private static ProgressReportRepository progressReportRepository;
     private static UserVerificationMessageRepository userVerificationMessageRepository;
+    private static MongoTemplate mongoTemplate;
 
     private static final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
+
+
 
     @PostConstruct
     private void initStaticDependencies() {
@@ -70,6 +80,7 @@ public class SystemService {
         taskRepository = taskRepositoryInstance;
         teamRepository = teamRepositoryInstance;
         userVerificationMessageRepository = userVerificationMessageRepositoryInstance;
+        mongoTemplate=mongoTemplateInstance;
     }
     public static ResponseEntity<?> checkRegistrationCredentialsAndSendRegistrationVerificationCode(User user) {
         // Check if username or email already exists
@@ -127,8 +138,7 @@ public class SystemService {
 
         user.setPassword(encoder.encode(rawPassword));
         user.setUserStatus("Active");
-        user.setTodos(new ArrayList<>());
-        user.setNotes(new ArrayList<>());
+        user.setAccountVisibility("Public");
         user.setUsersFollowing(new HashSet<>());
         if(user.getRole()==null){
             user.setRole("User");
@@ -136,28 +146,22 @@ public class SystemService {
         if(user.getShortBioData()==null){
             user.setShortBioData("Myself "+user.getUserName());
         }
-
         userRepository.save(user);
-
-
-        String response = CollaborationEngine.sendRegistrationSuccessfulMessage(user.getUserName(),user.getUserEmail());
-
-
-
+        CollaborationEngine.sendRegistrationSuccessfulMessage(user.getUserName(),user.getUserEmail());
         // Authenticate and generate token
-        user.setPassword(rawPassword); // Reset raw password for login
-
-        return performUserLogin(user);
+       // user.setPassword(rawPassword); // Reset raw password for login
+        LoginCredentials loginCredentials=new LoginCredentials(user.getUserName(),rawPassword);
+        return performUserLogin(loginCredentials);
     }
 
-    public static ResponseEntity<?> performUserLogin(User user) {
+    public static ResponseEntity<?> performUserLogin(LoginCredentials loginCredentials) {
         try {
             Authentication authentication = authManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(user.getUserName(), user.getPassword())
+                    new UsernamePasswordAuthenticationToken(loginCredentials.getUserName(), loginCredentials.getPassword())
             );
 
             if (authentication.isAuthenticated()) {
-                User authenticatedUser = userRepository.findByUserName(user.getUserName());
+                User authenticatedUser = userRepository.findByUserName(loginCredentials.getUserName());
                 if (authenticatedUser == null) {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User not found in the database.");
                 }
@@ -171,10 +175,10 @@ public class SystemService {
         }
     }
 
+    @Transactional
     public static ResponseEntity<?> handleForgotUserCredentials(String userEmail) {
-
-        List<User> user = userRepository.findByUserEmail(userEmail);
-        if (user.isEmpty()) {
+        List<User> users = userRepository.findByUserEmail(userEmail);
+        if (users.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
 
@@ -182,18 +186,27 @@ public class SystemService {
 
         // Generate a verification code
         UserVerificationMessage verificationCode=new UserVerificationMessage(code,"User",userEmail,new Date(System.currentTimeMillis() + (7 * 60 * 1000)));
-
+        UserVerificationMessage verificationMessage1=userVerificationMessageRepository.findByUserEmail(userEmail);
+        System.out.println(verificationMessage1);
         userVerificationMessageRepository.deleteByUserEmail(userEmail);
+        UserVerificationMessage verificationMessage2=userVerificationMessageRepository.findByUserEmail(userEmail);
+        System.out.println(verificationMessage2);
         // Save verification code
         userVerificationMessageRepository.save(verificationCode);
+        System.out.println(verificationCode);
+        UserVerificationMessage verificationMessage=userVerificationMessageRepository.findByUserEmail(userEmail);
+        System.out.println(verificationMessage);
 
-        String response=CollaborationEngine.sendAccountVerificationCode(userEmail,verificationCode.getCode());
+        Set<String> matchedUserNames=new HashSet<>();
+        for(User user:users){
+            matchedUserNames.add(user.getUserName());
+        }
 
-        return ResponseEntity.ok(response);
+        return CollaborationEngine.sendForgottenAccountCredentials(userEmail,verificationCode.getCode(),matchedUserNames);
 
     }
-    public static ResponseEntity<?> verifyVerificationCodeForAccountVerification(String code,String userEmail) {
-        // Check if the verification code is valid and not expired
+    public static ResponseEntity<?> verifyVerificationCodeForAccountVerification(String code,String userEmail,String userName,String updatedPassword) {
+
         UserVerificationMessage verificationCode = userVerificationMessageRepository.findByUserEmail(userEmail);
         if (verificationCode == null ) {
 
@@ -207,7 +220,11 @@ public class SystemService {
             userVerificationMessageRepository.delete(verificationCode);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Wrong verification code.Previous code became useless. Ask for new code if required. ");
         }
-        return ResponseEntity.ok(userRepository.findByUserEmail(userEmail));
+        User user=userRepository.findByUserName(userName);
+        user.setPassword(encoder.encode(updatedPassword));
+        userRepository.save(user);
+        userVerificationMessageRepository.delete(verificationCode);
+        return performUserLogin(new LoginCredentials(userName,updatedPassword));
 
     }
 
@@ -224,19 +241,13 @@ public class SystemService {
     }
 
     // Update user details
-    public static ResponseEntity<?> updateUserAccounDetails(String userName, UpdatedUserAccount updatedUserDetails) {
-        Boolean newTokenNeeded=false;
+    public static ResponseEntity<?> updateUserAccountDetails( String userName,UpdatedUserAccount updatedUserDetails) {
+        boolean newTokenNeeded=false;
         // Find the user by userName
         User existingUser = userRepository.findByUserName(userName);
 
         if (existingUser == null) {
-            throw new RuntimeException("User not found with username: " + userName);
-        }
-
-        // Update fields selectively if they are not null or empty
-        if (updatedUserDetails.getUserName() != null && !updatedUserDetails.getUserName().isEmpty()) {
-            existingUser.setUserName(updatedUserDetails.getUserName());
-            newTokenNeeded=true;
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User not found");
         }
 
         if (updatedUserDetails.getUserEmail() != null && !updatedUserDetails.getUserEmail().isEmpty()) {
@@ -245,7 +256,7 @@ public class SystemService {
         }
 
         if (updatedUserDetails.getPreviousPassword() != null && !updatedUserDetails.getPreviousPassword().isEmpty() && updatedUserDetails.getNewPassword() != null && !updatedUserDetails.getNewPassword().isEmpty()) {
-            if(existingUser.getPassword().equals(encoder.encode(updatedUserDetails.getPreviousPassword()))){
+            if(encoder.matches(updatedUserDetails.getPreviousPassword(), existingUser.getPassword())){
                 existingUser.setPassword(encoder.encode(updatedUserDetails.getNewPassword()));
             }
             else{
@@ -264,80 +275,99 @@ public class SystemService {
         if (updatedUserDetails.getUserStatus() != null && !updatedUserDetails.getUserStatus().isEmpty()) {
             existingUser.setUserStatus(updatedUserDetails.getUserStatus());
         }
+        if (updatedUserDetails.getAccountVisibility() != null && !updatedUserDetails.getAccountVisibility().isEmpty()) {
+            existingUser.setAccountVisibility(updatedUserDetails.getAccountVisibility());
+        }
 
         // Save the updated user to the repository
-         userRepository.save(existingUser);
+        userRepository.save(existingUser);
         if(newTokenNeeded) {
             return ResponseEntity.ok("Account Updated Successfully.Session Expired. Log in again.");
         }
         return  ResponseEntity.ok("Account Updated Successfully");
     }
 
-    public static ResponseEntity<?> getUserAccountDetails(String userName) {
+    public static ResponseEntity<?> getUserAccountDetails(String currentUserName, String userName) {
         // Check if the user exists
-        User user = userRepository.findByUserName(userName);
+        User user;
+        String targetUserName; // Declare a new variable for the target username
 
-        if (user != null) {
-            // Initialize UserDetailResponse
-            UserDetailResponse userDetailResponse = new UserDetailResponse();
-            userDetailResponse.setUserName(user.getUserName());
-            userDetailResponse.setUserEmail(user.getUserEmail());
-            userDetailResponse.setShortBioData(user.getShortBioData());
-            userDetailResponse.setRole(user.getRole());
-            userDetailResponse.setUserStatus(user.getUserStatus());
-
-            List<UserDetailResponse.UserTasks> userTasks = taskRepository.findAll().stream()
-                    .filter(task ->
-                            task.getTaskParticipants().contains(userName) || // Check if user is a participant
-                                    "public".equalsIgnoreCase(task.getTaskVisibilityStatus())) // Check if task visibility is public
-                    .map(task -> new UserDetailResponse.UserTasks(
-                            task.getTaskName(),
-                            task.getTaskOwner(),
-                            task.getTaskCategory(),
-                            task.getTaskDescription(),
-                            task.getTaskTodos().stream()
-                                    .map(Task.TaskTodo::getDescription)
-                                    .collect(Collectors.toList())
-                    ))
-                    .collect(Collectors.toList());
-
-            userDetailResponse.setUserTasks(userTasks);
-
-
-            // Fetch teams where user is a member or teams marked as public
-            List<UserDetailResponse.UserTeams> userTeams = teamRepository.findAll().stream()
-                    .filter(team ->
-                            team.getTeamMembers().contains(userName) ||
-                                    "public".equalsIgnoreCase(team.getTeamVisibilityStatus()))
-                    .map(team -> new UserDetailResponse.UserTeams(
-                            team.getTeamName(),
-                            team.getTeamOwner(),
-                            team.getTeamDescription()
-                    ))
-                    .collect(Collectors.toList());
-            userDetailResponse.setUserTeams(userTeams);
-
-            return ResponseEntity.ok(userDetailResponse);
+        if (userName == null || userName.isEmpty()) {
+            user = userRepository.findByUserName(currentUserName);
+            targetUserName = currentUserName; // Assign to the new variable
         } else {
+            user = userRepository.findByUserName(userName);
+            targetUserName = userName; // Assign to the new variable
+        }
+
+        if (user == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
-    }
 
+        if (user.getAccountVisibility().equals("Private") && !user.getUserName().equals(currentUserName)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("The account is private");
+        }
+
+        // Initialize UserDetailResponse
+        UserDetailResponse userDetailResponse = new UserDetailResponse();
+        userDetailResponse.setUserName(user.getUserName());
+        userDetailResponse.setUserEmail(user.getUserEmail());
+        userDetailResponse.setShortBioData(user.getShortBioData());
+        userDetailResponse.setRole(user.getRole());
+        userDetailResponse.setUserStatus(user.getUserStatus());
+        userDetailResponse.setAccountVisibility(user.getAccountVisibility());
+        userDetailResponse.setUsersFollowing(user.getUsersFollowing());
+
+        List<UserDetailResponse.UserTasks> userTasks = taskRepository.findAll().stream()
+                .filter(task -> task.getTaskParticipants().contains(targetUserName) &&
+                        task.getTaskVisibilityStatus().equalsIgnoreCase("public") &&
+                        task.getTaskCurrentProgress() != 100)
+                .map(task -> new UserDetailResponse.UserTasks(
+                        task.getTaskName(),
+                        task.getTaskOwner(),
+                        task.getTaskCategory(),
+                        task.getTaskPriority(),
+                        task.getTaskDescription(),
+                        task.getTaskCurrentProgress(),
+                        task.getTaskDeadline(),
+                        task.getTaskTodos().stream()
+                                .map(Task.TaskTodo::getDescription)
+                                .collect(Collectors.toList())
+                ))
+                .collect(Collectors.toList());
+
+        userDetailResponse.setUserTasks(userTasks);
+
+        List<UserDetailResponse.UserTeams> userTeams = teamRepository.findAll().stream()
+                .filter(team -> team.getTeamMembers().contains(targetUserName) &&
+                        team.getTeamVisibilityStatus().equalsIgnoreCase("public"))
+                .map(team -> new UserDetailResponse.UserTeams(
+                        team.getTeamName(),
+                        team.getTeamOwner(),
+                        team.getTeamDescription()
+                ))
+                .collect(Collectors.toList());
+
+        userDetailResponse.setUserTeams(userTeams);
+
+        return ResponseEntity.ok(userDetailResponse);
+    }
     @Scheduled(cron = "0 0 9,17,22 * * *") // 9 AM, 5 PM, 10 PM daily
     @Async("taskExecutor")
     public void sendDailyProgressReportToAllUsers() {
         Set<String> userNames = userRepository.findAllUserNames();
-        processReports(userNames, this::generateAndSendDailyReport);
+        processReports(userNames, this::generateAndSendDailyProgressReport);
     }
 
 
-    @Scheduled(cron = "0 0 20 * * THU") // 8 PM every Thursday
+
+
+    @Scheduled(cron = "0 0 20 * * THU") // 8 PM on Thursday (20 is 8 PM in 24 hour time)
     @Async("taskExecutor")
     public void sendWeeklyPerformanceReportToAllUsers() {
         Set<String> userNames = userRepository.findAllUserNames();
-        processReports(userNames, this::generateAndSendWeeklyReport);
+        processReports(userNames, this::generateAndSendWeeklyPerformanceReport);
     }
-
 
     private void processReports(Set<String> userNames, Consumer<String> reportProcessor) {
         for (String userName : userNames) {
@@ -345,8 +375,8 @@ public class SystemService {
         }
     }
 
-
-    private void generateAndSendDailyReport(String userName) {
+    @Async
+    private void generateAndSendDailyProgressReport(String userName) {
         try {
             ProgressReport report = AnalyticsEngine.generateProgressReport(userName);
             if (report != null) {
@@ -358,25 +388,23 @@ public class SystemService {
             logError(e, "Daily Progress Report", userName);
         }
     }
-
-
-    private void generateAndSendWeeklyReport(String userName) {
+    @Async
+    private void generateAndSendWeeklyPerformanceReport(String userName) {
         try {
-            PerformanceReport report = AnalyticsEngine.generateWeeklyPerformanceReport(userName);
+            ProgressReport report = AnalyticsEngine.generateProgressReport(userName);
             if (report != null) {
-                performanceReportRepository.save(report);
-                String message = generateMessageDescriptionFromPerformanceReport(report);
-                CollaborationEngine.sendProgressAndPerformanceReport(message, userName, false);
+                progressReportRepository.save(report);
+                String message = generateMessageDescriptionFromProgressReport(report);
+                CollaborationEngine.sendProgressAndPerformanceReport(message, userName, true);
             }
         } catch (Exception e) {
             logError(e, "Weekly Performance Report", userName);
         }
     }
 
-
     private void logError(Exception e, String reportType, String userName) {
         System.err.println("Failed to generate " + reportType + " for user: " + userName);
-        e.printStackTrace();
+
     }
     @Async
     public String generateMessageDescriptionFromProgressReport(ProgressReport progressReport) {
@@ -421,63 +449,175 @@ public class SystemService {
 
         return messageBuilder.toString();
     }
+    @Async
+    public String generateMessageDescriptionFromPerformanceReport(
+            UsersAccountStatistics accountStats,
+            UsersFeedbackStatistics feedbackStats,
+            UsersSessionStatistics sessionStats,
+            UsersTaskStatistics taskStats,
+            String userName) {
 
-    public static String generateMessageDescriptionFromPerformanceReport(PerformanceReport performanceReport) {
         StringBuilder messageBuilder = new StringBuilder();
+        messageBuilder.append("Weekly Performance Report Summary for ").append(userName).append(":\n\n");
 
-        messageBuilder.append("Performance Summary for ").append(performanceReport.getUserName()).append(":\n\n");
+        // Account Statistics
+        messageBuilder.append("Account Statistics:\n");
+        messageBuilder.append("- Number of Users Following: ").append(accountStats.getNumberOfUserFollowing()).append("\n");
+        messageBuilder.append("- Teams Participated: ").append(accountStats.getTeamsParticipated()).append("\n");
+        messageBuilder.append("- Number of Tasks Participated: ").append(accountStats.getNumberOfTasksParticipated()).append("\n");
+        messageBuilder.append("- Number of Sessions Created: ").append(accountStats.getNumberOfSessionsCreated()).append("\n");
+        messageBuilder.append("- Number of Messages Sent: ").append(accountStats.getNumberOfMessagesSent()).append("\n");
+        messageBuilder.append("- Number of Messages Received: ").append(accountStats.getNumberOfMessagesReceived()).append("\n");
 
-        // Include UsersTaskStatistics summary
-        UsersTaskStatistics taskStats = performanceReport.getUsersTaskStatistics();
-        if (taskStats != null) {
-            messageBuilder.append("Task Performance Summary:\n")
-                    .append("  - Tasks Completed Before Deadline: ")
-                    .append(String.join(", ", taskStats.getTasksCompletedBeforeDeadline())).append("\n")
-                    .append("  - Tasks Completed After Deadline: ")
-                    .append(String.join(", ", taskStats.getTasksCompletedAfterDeadline())).append("\n")
-                    .append("  - Unfinished Tasks with Deadline Remaining: ")
-                    .append(String.join(", ", taskStats.getDeadlineUncrossedAndUnfinishedTasks())).append("\n")
-                    .append("  - Unfinished Tasks with Deadline Crossed: ")
-                    .append(String.join(", ", taskStats.getDeadlineCrossedAndUnfinishedTasks())).append("\n\n");
+        if (accountStats.getPreviousFeedbackScores() != null && !accountStats.getPreviousFeedbackScores().isEmpty()) {
+            messageBuilder.append("- Previous Feedback Scores: ").append(accountStats.getPreviousFeedbackScores()).append("\n");
         }
 
-        // Include UsersSessionStatistics summary
-        UsersSessionStatistics sessionStats = performanceReport.getUsersSessionStatistics();
-        if (sessionStats != null) {
-            messageBuilder.append("Session Performance Summary:\n")
-                    .append("  - Total Sessions: ").append(sessionStats.getNumberOfSession()).append("\n")
-                    .append("  - Total Session Time: ").append(String.format("%.2f hours", sessionStats.getTotalSessionTime())).append("\n")
-                    .append("  - Average Efficiency: ").append(String.format("%.2f%%", sessionStats.getAverageSessionEfficiency())).append("\n")
-                    .append("  - Total Tasks Operated: ").append(sessionStats.getTotalTasksOperated()).append("\n")
-                    .append("  - Session Names: ").append(String.join(", ", sessionStats.getSessionNames())).append("\n\n");
+        messageBuilder.append("\n");
+
+        // Feedback Statistics
+        messageBuilder.append("Feedback Statistics:\n");
+        messageBuilder.append("- Feedback Count: ").append(feedbackStats.getFeedbackCount()).append("\n");
+        messageBuilder.append("- Average Feedback Score: ").append(feedbackStats.getAverageFeedbackScore()).append("\n");
+
+        if (feedbackStats.getFeedbackMessages() != null && !feedbackStats.getFeedbackMessages().isEmpty()) {
+            messageBuilder.append("- Feedback Messages:\n");
+            for (String feedbackMessage : feedbackStats.getFeedbackMessages()) {
+                messageBuilder.append("  - ").append(feedbackMessage).append("\n");
+            }
+        }
+        if (feedbackStats.getPreviousFeedbackScores() != null && !feedbackStats.getPreviousFeedbackScores().isEmpty()) {
+            messageBuilder.append("- Previous Feedback Scores: ").append(feedbackStats.getPreviousFeedbackScores()).append("\n");
         }
 
-        // Include UsersFeedbackStatistics summary
-        UsersFeedbackStatistics feedbackStats = performanceReport.getUsersFeedbackStatistics();
-        if (feedbackStats != null) {
-            messageBuilder.append("Feedback Summary:\n")
-                    .append("  - Total Feedback Count: ").append(feedbackStats.getFeedbackCount()).append("\n")
-                    .append("  - Average Feedback Score: ").append(String.format("%.2f", feedbackStats.getAverageFeedbackScore())).append("\n")
-                    .append("  - Feedback Messages:\n").append(String.join("\n", feedbackStats.getFeedbackMessages())).append("\n\n");
+        messageBuilder.append("\n");
+
+        // Session Statistics
+        messageBuilder.append("Session Statistics:\n");
+        messageBuilder.append("- Number of Sessions: ").append(sessionStats.getNumberOfSession()).append("\n");
+        messageBuilder.append("- Total Session Time: ").append(sessionStats.getTotalSessionTime()).append("\n");
+        messageBuilder.append("- Average Session Efficiency: ").append(sessionStats.getAverageSessionEfficiency()).append("\n");
+        messageBuilder.append("- Total Tasks Operated: ").append(sessionStats.getTotalTasksOperated()).append("\n");
+
+        if (sessionStats.getSessionNames() != null && !sessionStats.getSessionNames().isEmpty()) {
+            messageBuilder.append("- Session Names:\n");
+            for (String sessionName : sessionStats.getSessionNames()) {
+                messageBuilder.append("  - ").append(sessionName).append("\n");
+            }
+        }
+        if (sessionStats.getPreviousSessionsEfficiencyScores() != null && !sessionStats.getPreviousSessionsEfficiencyScores().isEmpty()) {
+            messageBuilder.append("- Previous Session Efficiency Scores: ").append(sessionStats.getPreviousSessionsEfficiencyScores()).append("\n");
         }
 
-        // Include UsersAccountStatistics summary
-        UsersAccountStatistics accountStats = performanceReport.getUsersAccountStatistics();
-        if (accountStats != null) {
-            messageBuilder.append("Account Activity Summary:\n")
-                    .append("  - Users Following: ").append(accountStats.getNumberOfUserFollowing()).append("\n")
-                    .append("  - Teams Participated: ").append(accountStats.getTeamsParticipated()).append("\n")
-                    .append("  - Tasks Participated: ").append(accountStats.getNumberOfTasksParticipated()).append("\n")
-                    .append("  - Sessions Created: ").append(accountStats.getNumberOfSessionsCreated()).append("\n")
-                    .append("  - Messages Sent: ").append(accountStats.getNumberOfMessagesSent()).append("\n")
-                    .append("  - Messages Received: ").append(accountStats.getNumberOfMessagesReceived()).append("\n")
-                    .append("  - Previous Feedback Scores: ").append(accountStats.getPreviousFeedbackScores().toString()).append("\n");
+        messageBuilder.append("\n");
+
+        // Task Statistics
+        messageBuilder.append("Task Statistics:\n");
+        if (taskStats.getTasksCompletedBeforeDeadline() != null && !taskStats.getTasksCompletedBeforeDeadline().isEmpty()) {
+            messageBuilder.append("- Tasks Completed Before Deadline:\n");
+            for (String taskName : taskStats.getTasksCompletedBeforeDeadline()) {
+                messageBuilder.append("  - ").append(taskName).append("\n");
+            }
         }
+        if (taskStats.getTasksCompletedAfterDeadline() != null && !taskStats.getTasksCompletedAfterDeadline().isEmpty()) {
+            messageBuilder.append("- Tasks Completed After Deadline:\n");
+            for (String taskName : taskStats.getTasksCompletedAfterDeadline()) {
+                messageBuilder.append("  - ").append(taskName).append("\n");
+            }
+        }
+        if (taskStats.getDeadlineUncrossedAndUnfinishedTasks() != null && !taskStats.getDeadlineUncrossedAndUnfinishedTasks().isEmpty()) {
+            messageBuilder.append("- Deadline Uncrossed and Unfinished Tasks:\n");
+            for (String taskName : taskStats.getDeadlineUncrossedAndUnfinishedTasks()) {
+                messageBuilder.append("  - ").append(taskName).append("\n");
+            }
+        }
+        if (taskStats.getDeadlineCrossedAndUnfinishedTasks() != null && !taskStats.getDeadlineCrossedAndUnfinishedTasks().isEmpty()) {
+            messageBuilder.append("- Deadline Crossed and Unfinished Tasks:\n");
+            for (String taskName : taskStats.getDeadlineCrossedAndUnfinishedTasks()) {
+                messageBuilder.append("  - ").append(taskName).append("\n");
+            }
+        }
+
         return messageBuilder.toString();
+    }
+    public static ResponseEntity<?> getSearchResult(String currentUserName, String keyWord) {
+        // Find the current user
+        User currentUser = userRepository.findByUserName(currentUserName);
+        if (currentUser == null) {
+            return ResponseEntity.badRequest().body("Current user not found");
+        }
 
+        // Get all users from the database
+        List<User> allUsers = userRepository.findAll();
 
+        // Prepare search results
+        List<SearchResult> searchResults = new ArrayList<>();
+
+        // Filter users based on the keyword
+        for (User user : allUsers) {
+            // Exclude users with accountVisibility "private" or if the user is the current user
+            if (!user.getUserName().equals(currentUserName) && !user.getAccountVisibility().equals("private")) {
+                // Check if the user matches the keyword in any field
+                if (matchesKeyword(user, keyWord)) {
+                    SearchResult result = new SearchResult();
+                    result.setUserName(user.getUserName());
+                    result.setUserEmail(user.getUserEmail());
+                    result.setShortBioData(user.getShortBioData());
+                    result.setRole(user.getRole());
+
+                    // Check if the current user is following this user
+                    result.setFollowing(currentUser.getUsersFollowing().contains(user.getUserName()));
+
+                    // Calculate match score
+                    result.setMatchScore(calculateMatchScore(keyWord, user));
+
+                    searchResults.add(result);
+                }
+            }
+        }
+
+        // Sort results by match score in descending order
+        searchResults.sort((a, b) -> Double.compare(b.getMatchScore(), a.getMatchScore()));
+
+        return ResponseEntity.ok(searchResults);
     }
 
+    // Helper method to check if a user matches the keyword
+    private static boolean matchesKeyword(User user, String keyword) {
+        String lowerCaseKeyword = keyword.toLowerCase();
 
+        return user.getUserName().toLowerCase().contains(lowerCaseKeyword) ||
+                user.getUserEmail().toLowerCase().contains(lowerCaseKeyword) ||
+                (user.getShortBioData() != null &&
+                        user.getShortBioData().toLowerCase().contains(lowerCaseKeyword));
+    }
 
+    // Helper method to calculate match score
+    private static double calculateMatchScore(String keyword, User user) {
+        double baseScore = 0.0;
+        String lowerCaseKeyword = keyword.toLowerCase();
+
+        // Exact match gets highest priority
+        if (user.getUserName().equalsIgnoreCase(keyword)) {
+            baseScore += 1.0;
+        }
+
+        // Partial username match
+        if (user.getUserName().toLowerCase().contains(lowerCaseKeyword)) {
+            baseScore += 0.8;
+        }
+
+        // Email match
+        if (user.getUserEmail().toLowerCase().contains(lowerCaseKeyword)) {
+            baseScore += 0.5;
+        }
+
+        // Bio data match
+        if (user.getShortBioData() != null &&
+                user.getShortBioData().toLowerCase().contains(lowerCaseKeyword)) {
+            baseScore += 0.3;
+        }
+
+        return baseScore;
+    }
 }
