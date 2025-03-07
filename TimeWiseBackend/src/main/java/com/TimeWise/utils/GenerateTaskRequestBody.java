@@ -9,4 +9,6 @@ import java.util.Date;
 public class GenerateTaskRequestBody {
     private String goalName;
     private Date goalDeadline;
+    private Integer numberOfTask;
+    private String userPrompt;
 }
