@@ -53,21 +53,31 @@ public class AnalyticsEngine {
 
 
     public static ProgressReport generateProgressReport(String userName) {
-        List<Task> userTasks=taskRepository.findByTaskParticipantsContains(userName);
-        if(userTasks.isEmpty()){
+        List<Task> userTasks = taskRepository.findByTaskParticipantsContains(userName);
+        if (userTasks.isEmpty()) {
             return null;
         }
-        ProgressReport userProgressReport=new ProgressReport();
+
+        ProgressReport userProgressReport = new ProgressReport();
         userProgressReport.setUserName(userName);
         userProgressReport.setTaskStatuses(new ArrayList<>());
-        List<ProgressReport.TaskStatus> taskStatuses=new ArrayList<>();
-        Date currentTime=new Date();
-        for(Task task:userTasks) {
-            if(task.getTaskCurrentProgress()<100) {
-                userProgressReport.addTaskStatuses(task.getTaskName(),task.getTaskOwner(),task.getTaskPriority(), task.getTaskCurrentProgress(),task.getTaskCreationDate(), task.getTaskDeadline(), task.getTaskDeadline().before(currentTime));
-            }
+        Date currentTime = new Date();
 
+        for (Task task : userTasks) {
+            if (task.getTaskCurrentProgress() < 100) {
+                ProgressReport.TaskDetails taskDetails = new ProgressReport.TaskDetails(
+                        task.getTaskName(),
+                        task.getTaskOwner(),
+                        task.getTaskPriority(),
+                        task.getTaskCurrentProgress(),
+                        task.getTaskCreationDate(),
+                        task.getTaskDeadline(),
+                        task.getTaskDeadline().before(currentTime)
+                );
+                userProgressReport.addTaskStatus(taskDetails);
+            }
         }
+
         userProgressReport.setTimeStamp(currentTime); // Set the timestamp to the current date
         return progressReportRepository.save(userProgressReport);
     }

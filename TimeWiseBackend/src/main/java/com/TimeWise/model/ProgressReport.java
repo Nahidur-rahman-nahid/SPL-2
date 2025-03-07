@@ -18,12 +18,20 @@ public class ProgressReport {
     @Id
     private ObjectId progressReportId;
     private String userName;
-    private List<TaskStatus> taskStatuses;
+    private List<com.TimeWise.model.ProgressReport.TaskStatus> taskStatuses;
     private Date timeStamp;
 
-    // Method to add a comment
-    public void addTaskStatuses(String taskName,String taskOwner,String taskPriority, Integer taskCurrentProgress,Date taskCreationDate,Date taskDeadline,Boolean isDeadlineCrossed) {
-        TaskStatus taskStatus = new TaskStatus(taskName,taskOwner,taskPriority, taskCurrentProgress,taskCreationDate, taskDeadline,isDeadlineCrossed);
+    // Method to add a task status
+    public void addTaskStatus(com.TimeWise.model.ProgressReport.TaskDetails taskDetails) {
+        com.TimeWise.model.ProgressReport.TaskStatus taskStatus = new com.TimeWise.model.ProgressReport.TaskStatus(
+                taskDetails.getTaskName(),
+                taskDetails.getTaskOwner(),
+                taskDetails.getTaskPriority(),
+                taskDetails.getTaskCurrentProgress(),
+                taskDetails.getTaskCreationDate(),
+                taskDetails.getTaskDeadline(),
+                taskDetails.getIsDeadlineCrossed()
+        );
         this.taskStatuses.add(taskStatus);
     }
 
@@ -34,7 +42,20 @@ public class ProgressReport {
         private String taskName;
         private String taskOwner;
         private String taskPriority;
-        private Integer tasksCurrentProgress;
+        private Integer taskCurrentProgress;
+        private Date taskCreationDate;
+        private Date taskDeadline;
+        private Boolean isDeadlineCrossed;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TaskDetails {
+        private String taskName;
+        private String taskOwner;
+        private String taskPriority;
+        private Integer taskCurrentProgress;
         private Date taskCreationDate;
         private Date taskDeadline;
         private Boolean isDeadlineCrossed;
