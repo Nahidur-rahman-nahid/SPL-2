@@ -14,11 +14,10 @@
 	<name>TimeWiseBackend</name>
 	<description>SPL-2 project</description>
 	<properties>
-
-			<java.version>17</java.version>
-			<maven.compiler.source>17</maven.compiler.source>
-			<maven.compiler.target>17</maven.compiler.target>
-
+		<java.version>17</java.version>
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
+		<spring-ai.version>1.0.0-M4</spring-ai.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -114,6 +113,14 @@
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.13.0</version>
+				<configuration>
+					<release>17</release>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
