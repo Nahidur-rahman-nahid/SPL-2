@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import AnalyzeDataButton from '@/components/AnalyzeDataButton';
 
 export default function AccountDashboard() {
   const { toast } = useToast();
@@ -119,6 +120,7 @@ export default function AccountDashboard() {
       });
       
       if (response.ok) {
+        const userData=response.json();
         // Update the userData state with the new values
         setUserData(prev => ({
           ...prev,
@@ -187,6 +189,11 @@ if (isLoading && !userData) {
     <div className="container mx-auto py-2 px-4">
       <div className="flex justify-between items-center mb-2">
         <h1 className="text-3xl font-bold">Account Dashboard</h1>
+        
+         <AnalyzeDataButton
+                                  data={userData}
+                                  buttonText="Analyze Account Details"
+                                />
         {userData && localUserData && userData.userName === localUserData.userName && (
           <Button 
             variant={isEditing ? "default" : "outline"} 
@@ -309,7 +316,7 @@ if (isLoading && !userData) {
                           <Input 
                             id="userName" 
                             name="userName"
-                            value={editForm.userName}
+                            value={userData.userName}
                           
                             disabled={!isEditing} 
                             required
@@ -323,7 +330,7 @@ if (isLoading && !userData) {
                             id="userEmail" 
                             name="userEmail"
                             type="email"
-                            value={editForm.userEmail}
+                            value={userData.userEmail}
                             onChange={handleInputChange}
                             disabled={!isEditing}
                             required
@@ -335,7 +342,7 @@ if (isLoading && !userData) {
   <Label htmlFor="role">Role</Label>
   {isEditing ? (
     <Select 
-      value={editForm.role || ""} 
+      value={userData.role || ""} 
       onValueChange={(value) => handleSelectChange("role", value)}
     >
       <SelectTrigger id="role">
@@ -379,7 +386,7 @@ if (isLoading && !userData) {
   <Label htmlFor="userStatus">Account Status</Label>
   {isEditing ? (
     <Select
-      value={editForm.userStatus || ""}
+      value={userData.userStatus || ""}
       onValueChange={(value) => handleSelectChange("userStatus", value)}
     >
       <SelectTrigger id="userStatus">
@@ -400,11 +407,11 @@ if (isLoading && !userData) {
   <Label htmlFor="accountVisibility">Account Visibility</Label>
   {isEditing ? (
     <Select 
-      value={editForm.accountVisibility || ""}
+      value={userData.accountVisibility || ""}
       onValueChange={(value) => handleSelectChange("accountVisibility", value)}
     >
       <SelectTrigger id="accountVisibility">
-        <SelectValue>{editForm.accountVisibility || "Select visibility"}</SelectValue>
+        <SelectValue>{userData.accountVisibility || "Select visibility"}</SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="Public">Public</SelectItem>
@@ -423,7 +430,7 @@ if (isLoading && !userData) {
                         <Textarea 
                           id="shortBioData" 
                           name="shortBioData"
-                          value={editForm.shortBioData}
+                          value={userData.shortBioData}
                           onChange={handleInputChange}
                           disabled={!isEditing}
                           placeholder="Tell us about yourself"
@@ -446,7 +453,7 @@ if (isLoading && !userData) {
                                 id="previousPassword" 
                                 name="previousPassword"
                                 type="password"
-                                value={editForm.previousPassword}
+                                value={userData.previousPassword}
                                 onChange={handleInputChange}
                                 placeholder="Enter current password"
                               />
@@ -457,7 +464,7 @@ if (isLoading && !userData) {
                                 id="newPassword" 
                                 name="newPassword"
                                 type="password"
-                                value={editForm.newPassword}
+                                value={userData.newPassword}
                                 onChange={handleInputChange}
                                 placeholder="Enter new password"
                               />

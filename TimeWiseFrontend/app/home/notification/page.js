@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Search, Trash2, Users, Bell, FileText, Check, X, Clock, Info, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
+import AnalyzeDataButton from '@/components/AnalyzeDataButton';
 
 const NotificationDashboard = () => {
   const router = useRouter();
@@ -31,7 +32,11 @@ const NotificationDashboard = () => {
       setLoading(true);
       const response = await fetch(`/api/notifications`);
       const notifications = await response.json();
-      setNotifications(notifications);
+      // Sort notifications by timestamp (latest first)
+      const sortedNotifications = Array.isArray(notifications) 
+        ? notifications.sort((a, b) => new Date(b.timeStamp) - new Date(a.timeStamp))
+        : [];
+      setNotifications(sortedNotifications);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -56,76 +61,81 @@ const NotificationDashboard = () => {
     }
   };
 
-  const handleRespondToInvitation = async (notificationId, action, type) => {
+  const handleRespondToInvitation = async (entityName, entityOwner, action, type) => {
     try {
       let endpoint = '';
-      
+      let teamNotification = true;
+      let response; // Declare response outside the if blocks
+  
       switch (type) {
         case 'TEAM JOINING INVITATION':
-        case 'TEAM JOINING INVITATION_RESPONSE':
-          endpoint = '/api/teams/respond-invitation';
+          endpoint = '/api/teams/invite/response';
           break;
-        case 'TASK_INVITATION':
-        case 'TASK_INVITATION_RESPONSE':
-          endpoint = '/api/tasks/respond-invitation';
+        case 'TASK PARTICIPATING INVITATION':
+          endpoint = '/api/tasks/invite/response';
+          teamNotification = false;
           break;
         case 'TEAM_JOINING_REQUEST':
         case 'TEAM_JOINING_REQUEST_RESPONSE':
-          endpoint = '/api/teams/respond-join-request';
+          endpoint = '/api/teams/request/response';
           break;
         default:
           console.error('Unknown notification type:', type);
           return;
       }
+  
+      if (!teamNotification) {
+        // Task invitation response (PUT request)
+        let url;
+        if (entityOwner) {
+          url = `/api/tasks/invite/response?taskName=${encodeURIComponent(
+            entityName
+          )}&taskOwner=${encodeURIComponent(entityOwner)}&response=${action}`;
+        } else {
+          url = `/api/tasks/invite/response?teamName=${encodeURIComponent(
+            entityName
+          )}&response=${action}`;
+        }
       
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          notificationId,
-          action, // 'accept' or 'decline'
-          entityName: notifications.find(n => n.notificationId === notificationId)?.entityNameRelatedToNotification
-        }),
-      });
+        response = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
       
-      if (response.ok) {
-        fetchNotifications();
+        if (!response.ok) {
+          throw new Error('Failed to send response');
+        }
       } else {
+        // Team invitation response (PUT request) - using request parameters
+        const url = `/api/teams/invite/response?teamName=${encodeURIComponent(
+          entityName
+        )}&response=${encodeURIComponent(action)}`;
+      
+        response = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      
+        if (!response.ok) {
+          throw new Error('Failed to send response');
+        }
+      }
+      
+      if (response && response.ok) {
+        fetchNotifications();
+      } else if (response) {
         const errorData = await response.json();
         console.error('Error responding to invitation:', errorData);
       }
+  
     } catch (error) {
       console.error('Error:', error);
     }
   };
-
-  const handleSummarizeNotifications = async () => {
-    try {
-      setSummarizing(true);
-      const response = await fetch('/api/notifications/summarize', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ limit: 50 }), // Optional limit parameter
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setSummaryText(data.summary || data.text || 'No summary available.');
-        setShowSummary(true);
-      } else {
-        console.error('Error summarizing notifications');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setSummarizing(false);
-    }
-  };
-
   const markNotificationAsSeen = async (notificationId) => {
     try {
       const response = await fetch(`/api/notifications/mark-seen`, {
@@ -143,9 +153,10 @@ const NotificationDashboard = () => {
       console.error('Error marking notification as seen:', error);
     }
   };
+  
   const unseenNotifications = useMemo(() => {
     return Array.isArray(notifications)
-      ? notifications.filter(notification => notification.notificationStatus === 'Unseen')
+      ? notifications.filter(notification => notification.notificationStatus === 'Unread')
       : []; 
   }, [notifications]);
 
@@ -173,6 +184,7 @@ const NotificationDashboard = () => {
       (notification.entityNameRelatedToNotification && notification.entityNameRelatedToNotification.toLowerCase().includes(term))
     );
   }, [notifications, searchTerm]);
+  
   const getInitials = (name) => {
     if (!name) return '?';
     return name.split(' ').map((n) => n[0]).join('').toUpperCase();
@@ -208,7 +220,7 @@ const NotificationDashboard = () => {
   const isActionableNotification = (type) => {
     return [
       'TEAM JOINING INVITATION',
-      'TASK_INVITATION',
+      'TASK PARTICIPATING INVITATION',
       'TEAM_JOINING_REQUEST'
     ].includes(type);
   };
@@ -219,7 +231,7 @@ const NotificationDashboard = () => {
     return (
       <Card 
         key={`${notification.notificationId}-${notification.timeStamp}`} 
-        className={`mb-4 ${notification.notificationStatus === 'UNSEEN' ? 'border-l-4 border-l-blue-500' : ''}`}
+        className={`mb-4 ${notification.notificationStatus === 'Unread' ? 'border-l-4 border-l-blue-500' : ''}`}
       >
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
@@ -232,8 +244,6 @@ const NotificationDashboard = () => {
               <div>
                 <CardTitle className="text-base">
                   {notification.sender} 
-                  {notification.entityNameRelatedToNotification ? 
-                    ` • ${notification.entityNameRelatedToNotification}` : ''}
                 </CardTitle>
                 <CardDescription className="text-sm">
                   {notification.notificationSubject.replace(/_/g, ' ')}
@@ -241,18 +251,18 @@ const NotificationDashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {notification.notificationStatus === 'UNSEEN' && (
+              {notification.notificationStatus === 'Unread' && (
                 <Badge className="bg-blue-500 text-white">
                   New
                 </Badge>
               )}
-              <Button 
+              {/* <Button 
                 variant="ghost" 
                 size="icon"
                 onClick={() => handleRemoveNotification(notification.notificationId)}
               >
                 <Trash2 className="h-4 w-4" />
-              </Button>
+              </Button> */}
             </div>
           </div>
         </CardHeader>
@@ -265,7 +275,8 @@ const NotificationDashboard = () => {
                 size="sm"
                 className="bg-green-600 hover:bg-green-700"
                 onClick={() => handleRespondToInvitation(
-                  notification.notificationId, 
+                  notification.entityNameRelatedToNotification, 
+                  notification.sender,
                   'accept', 
                   notification.notificationSubject
                 )}
@@ -299,14 +310,14 @@ const NotificationDashboard = () => {
   };
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-1">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Notifications</h1>
         <div className="flex gap-2">
-          <Button onClick={handleSummarizeNotifications} disabled={summarizing}>
-            <FileText className="mr-2 h-4 w-4" />
-            {summarizing ? 'Summarizing...' : 'Summarize Notifications'}
-          </Button>
+          <AnalyzeDataButton
+            data={notifications}
+            buttonText="Analyze Notifications"
+          />
         </div>
       </div>
 
@@ -338,14 +349,17 @@ const NotificationDashboard = () => {
             <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 cursor-pointer" onClick={() => setSearchTerm('TEAM JOINING INVITATION')}>
               <Users className="mr-1 h-3 w-3" /> Team Invitations
             </Badge>
-            <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 cursor-pointer" onClick={() => setSearchTerm('JOINING_REQUEST')}>
-              <Users className="mr-1 h-3 w-3" /> Join Requests
+            <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 cursor-pointer" onClick={() => setSearchTerm('REQUEST')}>
+              <Users className="mr-1 h-3 w-3" /> Team Join Requests
             </Badge>
-            <Badge className="bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer" onClick={() => setSearchTerm('TASK_INVITATION')}>
-              <FileText className="mr-1 h-3 w-3" /> Task Invitations
+            <Badge className="bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer" onClick={() => setSearchTerm('TASK PARTICIPATING INVITATION')}>
+              <FileText className="mr-1 h-3 w-3" />Task Invitations
             </Badge>
-            <Badge className="bg-red-100 text-red-800 hover:bg-red-200 cursor-pointer" onClick={() => setSearchTerm('DELETED')}>
-              <AlertCircle className="mr-1 h-3 w-3" /> Deletions
+            <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 cursor-pointer" onClick={() => setSearchTerm('NEW_TEAM_TASK_ADDED')}>
+              <Info className="mr-1 h-3 w-3" /> Task Additions
+            </Badge>
+            <Badge className="bg-red-100 text-red-800 hover:bg-red-200 cursor-pointer" onClick={() => setSearchTerm('REMOVE')}>
+              <AlertCircle className="mr-1 h-3 w-3" /> Removals
             </Badge>
             <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 cursor-pointer" onClick={() => setSearchTerm('UPDATED')}>
               <Info className="mr-1 h-3 w-3" /> Updates
@@ -355,66 +369,21 @@ const NotificationDashboard = () => {
           <Tabs defaultValue="all">
             <TabsList className="mb-4">
               <TabsTrigger value="all">All ({notifications.length})</TabsTrigger>
-              <TabsTrigger value="unseen">Unseen ({unseenNotifications.length})</TabsTrigger>
-              <TabsTrigger value="seen">Seen ({seenNotifications.length})</TabsTrigger>
+              {/* <TabsTrigger value="unseen">Unseen ({unseenNotifications.length})</TabsTrigger>
+              <TabsTrigger value="seen">Seen ({seenNotifications.length})</TabsTrigger> */}
             </TabsList>
             
             <TabsContent value="all">
-  {loading ? (
-    <div className="text-center py-8">Loading notifications...</div>
-  ) : Array.isArray(filteredNotifications) && filteredNotifications.length === 0 ? (
-    <div className="text-center py-8">No notifications found</div>
-  ) : Array.isArray(filteredNotifications) ? (
-    <div className="space-y-4">
-      {filteredNotifications.map(renderNotificationItem)}
-    </div>
-  ) : (
-    <div className="text-center py-8">No notifications found</div>
-  )}
-</TabsContent>
-            <TabsContent value="unseen">
               {loading ? (
                 <div className="text-center py-8">Loading notifications...</div>
-              ) : unseenNotifications.length === 0 ? (
-                <div className="text-center py-8">No unseen notifications</div>
-              ) : (
-                <div className="space-y-4">
-                  {unseenNotifications
-                    .filter(notification => {
-                      if (!searchTerm) return true;
-                      const term = searchTerm.toLowerCase();
-                      return (
-                        (notification.sender && notification.sender.toLowerCase().includes(term)) ||
-                        (notification.notificationSubject && notification.notificationSubject.toLowerCase().includes(term)) ||
-                        (notification.notificationMessage && notification.notificationMessage.toLowerCase().includes(term)) ||
-                        (notification.entityNameRelatedToNotification && notification.entityNameRelatedToNotification.toLowerCase().includes(term))
-                      );
-                    })
-                    .map(renderNotificationItem)}
+              ) : Array.isArray(filteredNotifications) && filteredNotifications.length === 0 ? (
+                <div className="text-center py-8">No notifications found</div>
+              ) : Array.isArray(filteredNotifications) ? (
+                <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                  {filteredNotifications.map(renderNotificationItem)}
                 </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="seen">
-              {loading ? (
-                <div className="text-center py-8">Loading notifications...</div>
-              ) : seenNotifications.length === 0 ? (
-                <div className="text-center py-8">No seen notifications</div>
               ) : (
-                <div className="space-y-4">
-                  {seenNotifications
-                    .filter(notification => {
-                      if (!searchTerm) return true;
-                      const term = searchTerm.toLowerCase();
-                      return (
-                        (notification.sender && notification.sender.toLowerCase().includes(term)) ||
-                        (notification.notificationSubject && notification.notificationSubject.toLowerCase().includes(term)) ||
-                        (notification.notificationMessage && notification.notificationMessage.toLowerCase().includes(term)) ||
-                        (notification.entityNameRelatedToNotification && notification.entityNameRelatedToNotification.toLowerCase().includes(term))
-                      );
-                    })
-                    .map(renderNotificationItem)}
-                </div>
+                <div className="text-center py-8">No notifications found</div>
               )}
             </TabsContent>
           </Tabs>

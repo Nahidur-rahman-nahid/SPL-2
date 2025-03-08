@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-export async function POST(req) {
+export async function DELETE(req) {
   try {
     const url = new URL(req.url);
     const taskName = url.searchParams.get('taskName');
@@ -23,7 +23,7 @@ export async function POST(req) {
     const response = await fetch(
       `${process.env.BACKEND_SERVER_URL}/api/tasks/delete?taskName=${taskName}`,
       {
-        method: 'POST',
+        method: 'DELETE',
         headers: { 'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
          },
@@ -38,7 +38,8 @@ export async function POST(req) {
       );
     }
     
-    return NextResponse.json({ status: 200 });
+    const responseText = await response.text();
+    return NextResponse.json(responseText, { status: 201 });
   } catch (error) {
     console.error('Task Deleting Error:', error);
     return NextResponse.json(

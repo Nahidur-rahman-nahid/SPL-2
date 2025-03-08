@@ -48,6 +48,8 @@ import {
   Timer,
   Settings
 } from 'lucide-react';
+import AnalyzeDataButton from '@/components/AnalyzeDataButton';
+
 
 const SessionStatisticsDashboard = () => {
   const [sessionStats, setSessionStats] = useState(null);
@@ -295,6 +297,8 @@ const SessionStatisticsDashboard = () => {
           <CardTitle className="text-2xl font-bold">
             Session Statistics Dashboard
           </CardTitle>
+          <AnalyzeDataButton data={sessionStats} 
+                  buttonText="Analyze Session Stats"/>
           <Button
                       variant="outline"
                       onClick={() => setShowDaysDialog(true)}

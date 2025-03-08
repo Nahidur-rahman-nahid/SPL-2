@@ -156,7 +156,7 @@ export default function TeamsPage() {
     router.push(`/home/team/details`);
   };
 
-  const handleCreateTeam = () => {W
+  const handleCreateTeam = () => {
     router.push('/home/team/create');
   };
 
@@ -206,7 +206,7 @@ export default function TeamsPage() {
         {/* Quick Actions */}
         {teams.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="cursor-pointer hover:shadow-md transition-all">
+            {/* <Card className="cursor-pointer hover:shadow-md transition-all">
               <CardHeader className="flex flex-row items-center space-x-4">
                 <Plus className="h-6 w-6" />
                 <div>
@@ -214,8 +214,8 @@ export default function TeamsPage() {
                   <CardDescription>Start a new collaboration</CardDescription>
                 </div>
               </CardHeader>
-            </Card>
-            <Card className="cursor-pointer hover:shadow-md transition-all">
+            </Card> */}
+            {/* <Card className="cursor-pointer hover:shadow-md transition-all">
               <CardHeader className="flex flex-row items-center space-x-4">
                 <UserPlus className="h-6 w-6" />
                 <div>
@@ -223,8 +223,8 @@ export default function TeamsPage() {
                   <CardDescription>Accept team invitations</CardDescription>
                 </div>
               </CardHeader>
-            </Card>
-            <Card className="cursor-pointer hover:shadow-md transition-all">
+            </Card> */}
+            {/* <Card className="cursor-pointer hover:shadow-md transition-all">
               <CardHeader className="flex flex-row items-center space-x-4">
                 <Globe className="h-6 w-6" />
                 <div>
@@ -232,7 +232,7 @@ export default function TeamsPage() {
                   <CardDescription>Find public teams to join</CardDescription>
                 </div>
               </CardHeader>
-            </Card>
+            </Card> */}
           </div>
         )}
       </div>

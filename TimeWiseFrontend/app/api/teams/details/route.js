@@ -11,7 +11,7 @@ export async function GET(req) {
     }
     const url = new URL(req.url);
     const teamName = url.searchParams.get('teamName');
-    console.log(teamName);
+   
 
     const response = await fetch(
       `${process.env.BACKEND_SERVER_URL}/api/teams/details?teamName=${teamName}`,

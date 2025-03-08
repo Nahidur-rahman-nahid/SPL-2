@@ -4,10 +4,10 @@ import { redirect } from 'next/dist/server/api-utils';
 
 export async function POST(req) {
   try {
-    const taskDetails = await req.json();
+    const sessionDetails = await req.json();
 
     const cookieStore = await cookies();
-  const token = cookieStore.get("timewise-auth-token")?.value;
+    const token = cookieStore.get("timewise-auth-token")?.value;
 
     if (!token) {
       redirect("/login");
@@ -21,7 +21,7 @@ export async function POST(req) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(taskDetails),
+        body: JSON.stringify(sessionDetails),
       }
     );
 
@@ -33,8 +33,8 @@ export async function POST(req) {
       );
     }
 
-    const createdTasks = await response.json();
-    return NextResponse.json(createdTasks, { status: 201 });
+    const createdSession = await response.json();
+    return NextResponse.json(createdSession, { status: 201 });
   } catch (error) {
     console.error('Session Creation Error:', error);
     return NextResponse.json(

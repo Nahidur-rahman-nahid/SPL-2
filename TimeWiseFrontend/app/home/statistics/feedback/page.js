@@ -52,6 +52,8 @@ import {
   History,
   Filter,
 } from "lucide-react";
+import AnalyzeDataButton from '@/components/AnalyzeDataButton';
+
 
 const FeedbackStatisticsDashboard = () => {
   const [feedbackStats, setFeedbackStats] = useState(null);
@@ -378,6 +380,8 @@ const FeedbackStatisticsDashboard = () => {
           <CardTitle className="text-2xl font-bold">
             Feedback Statistics Dashboard
           </CardTitle>
+          <AnalyzeDataButton data={feedbackStats} 
+                  buttonText="Analyze Feedback Stats"/>
           <Button
                       variant="outline"
                       onClick={() => setShowDaysDialog(true)}

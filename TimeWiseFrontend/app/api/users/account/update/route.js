@@ -33,8 +33,8 @@ export async function PUT(req) {
       );
     }
 
-    const updatedUserAccount = await response.json();
-    return NextResponse.json(updatedUserAccount, { status: 201 });
+    const text = await response.text();
+    return NextResponse.json(text, { status: 201 });
   } catch (error) {
     console.error('Account details modification Error:', error);
     return NextResponse.json(

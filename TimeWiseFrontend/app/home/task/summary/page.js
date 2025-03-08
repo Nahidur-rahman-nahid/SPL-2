@@ -67,6 +67,7 @@ import {
   differenceInDays,
 } from "date-fns";
 import { toast } from "@/components/ui/use-toast";
+import AnalyzeDataButton from '@/components/AnalyzeDataButton';
 
 // Priority badges
 const priorityBadges = {
@@ -207,10 +208,12 @@ export default function TaskDashboard() {
 
   // Navigate to task details
   const handleViewTaskDetails = (task) => {
-    // Save task info to local storage
-    localStorage.setItem("TimeWiseSelectedTaskName", task.taskName);
-    localStorage.setItem("TimeWiseSelectedTaskOwner", task.taskOwner);
-
+    const taskInfo = {
+      taskName: task.taskName,
+      taskOwner: task.taskOwner,
+    };
+    
+    localStorage.setItem("TimeWiseTask", JSON.stringify(taskInfo));
     // Navigate to task details page
     router.push("/home/task/details");
   };
@@ -699,18 +702,44 @@ export default function TaskDashboard() {
       </div>
     );
   };
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch(`/api/users/account/details`);
+        const userData = await response.json();
+        if (userData) {
+          localStorage.setItem("TimeWiseUserData", JSON.stringify(userData));
+        } else {
+          router.push("/welcome");
+        }
+      } catch (err) {
+        router.push("/welcome");
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [router]);
+
 
   return (
     <div className="container mx-auto px-4 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight mb-2 text-blue-500">
-          Task Dashboard
-        </h1>
-        <p className="text-muted-foreground">
-          Manage and track your tasks with advanced sorting and filtering
-          options.
-        </p>
-      </div>
+      <div className="mb-6 flex items-start"> 
+    <div className="flex-grow"> 
+      <h1 className="text-3xl font-bold tracking-tight  text-blue-500">
+        Task Dashboard
+      </h1>
+    </div>
+    <AnalyzeDataButton
+      data={tasks}
+      buttonText="Analyze Tasks Details"
+    />
+  </div>
+  <p className="text-muted-foreground mb-1">
+    Manage and track your tasks with advanced sorting and filtering options.
+  </p>
 
       {/* Tabs for quick filtering */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">

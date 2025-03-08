@@ -45,7 +45,11 @@ import {
   CheckCircle,
   BarChart,
   Users,
+  FileText,
   Bell,
+  Calendar,
+  MessageSquare,
+  Route,
   Target,
   Activity,
 } from "lucide-react";
@@ -62,73 +66,78 @@ export default function WelcomePage() {
 
   const features = [
     {
-      title: "Advanced User Management",
-      description: "Create and customize your profile with detailed insights and preferences.",
-      icon: User,
+      title: "AI-Powered Task & Roadmap Generator",
+      description: "Automate task creation and roadmap planning with AI-driven insights and suggestions.",
+      icon: Route,
       details: [
-        "Customizable user profiles",
-        "Role-based access control",
-        "Profile analytics",
-        "Activity history",
+        "Set goals and let AI generate detailed task roadmaps",
+        "AI suggests task dependencies, priorities, and deadlines",
+        "Customize parameters like task count and milestones",
+        "Modify and save AI-generated roadmaps for future use",
+        "Collaborate on tasks with team members and track progress",
       ],
     },
     {
-      title: "Intelligent Task Management",
-      description: "AI-powered task organization and prioritization system.",
-      icon: CheckCircle,
+      title: "Smart Communication & Feedback Assistant",
+      description: "Draft professional messages and feedback with AI-powered content generation.",
+      icon: MessageSquare,
       details: [
-        "Smart task categorization",
-        "Priority automation",
-        "Deadline predictions",
-        "Task dependencies",
+        "AI generates concise and insightful messages and feedback",
+        "Summarize feedback with AI-driven analysis and scoring",
+        "Revise and customize AI-generated content before sending",
+        "Email notifications for messages and feedback",
+        "AI-powered inbox analysis for quick insights",
       ],
     },
     {
-      title: "Real-time Progress Tracking",
-      description: "Monitor your progress with advanced analytics and insights.",
-      icon: Activity,
+      title: "AI-Driven Session & Productivity Manager",
+      description: "Optimize your work sessions with AI-generated outlines and deep work analytics.",
+      icon: Clock,
       details: [
-        "Visual progress indicators",
-        "Milestone tracking",
-        "Progress predictions",
-        "Achievement system",
+        "AI creates session goals and task outlines based on priorities",
+        "Track session progress with a timer and AI-driven insights",
+        "Evaluate session efficiency with AI-generated productivity scores",
+        "Resume sessions from where you left off",
+        "Analyze deep work patterns with time-based productivity metrics",
       ],
     },
     {
-      title: "Performance Analytics",
-      description: "Comprehensive performance metrics and insights.",
+      title: "Advanced Progress & Performance Tracker",
+      description: "Monitor your productivity with AI-driven reports and actionable insights.",
       icon: BarChart,
       details: [
-        "Detailed performance metrics",
-        "Productivity analysis",
-        "Custom reports",
-        "Trend forecasting",
+        "AI generates daily progress reports for unfinished tasks",
+        "Weekly performance reports with statistical data and trends",
+        "Identify productivity patterns and improvement areas",
+        "Historical progress tracking for better goal setting",
+        "Customizable time periods for detailed analysis",
       ],
     },
     {
-      title: "Smart Notifications",
-      description: "Context-aware reminders and intelligent alerts.",
-      icon: Bell,
-      details: [
-        "AI-powered notifications",
-        "Custom alert rules",
-        "Priority-based alerts",
-        "Multi-channel delivery",
-      ],
-    },
-    {
-      title: "Team Collaboration",
-      description: "Advanced tools for team coordination and feedback.",
+      title: "Collaborative Team & Task Management",
+      description: "Work seamlessly with teams using AI-powered task sharing and collaboration tools.",
       icon: Users,
       details: [
-        "Real-time collaboration",
-        "Team analytics",
-        "Shared workspaces",
-        "Feedback system",
+        "AI suggests team members based on task compatibility",
+        "Share tasks and collaborate with real-time updates",
+        "Team chat for communication and feedback",
+        "AI tracks team progress and performance metrics",
+        "Create and manage teams with role-based access control",
+      ],
+    },
+    {
+      title: "Personalized Insights & Analytics Dashboard",
+      description: "Visualize your productivity and performance with AI-driven statistics and insights.",
+      icon: Target,
+      details: [
+        "AI generates bar graphs, pie charts, and trend forecasts",
+        "Filter statistics by time period for personalized insights",
+        "AI identifies performance trends and improvement areas",
+        "Multiple visualization options for better understanding",
+        "Deep work analytics for optimizing productivity",
       ],
     },
   ];
-
   const mainContentVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -152,6 +161,13 @@ export default function WelcomePage() {
       scale: 1.02,
       transition: { duration: 0.2 },
     },
+  };
+  const handleFeatureClick = (id) => {
+    setIsMenuOpen(false); // Close the menu
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   if (!mounted) return null;
@@ -180,7 +196,7 @@ export default function WelcomePage() {
               
 
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/about-us">About</Link>
+                <Link href="/about">About</Link>
               </Button>
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/contact">Contact</Link>
@@ -212,22 +228,29 @@ export default function WelcomePage() {
                 </SheetHeader>
                 <ScrollArea className="h-[calc(100vh-8rem)] py-4">
                   <div className="flex flex-col space-y-2">
-                    {features.map((feature) => (
-                      <Button
-                        key={feature.title}
-                        variant="ghost"
-                        className="justify-start"
-                      >
-                        <feature.icon className="mr-2 h-4 w-4" />
-                        {feature.title}
-                      </Button>
-                    ))}
+                  {features.map((feature, index) => (
+                  <Button
+                    key={feature.title}
+                    variant="ghost"
+                    className="justify-start"
+                    onClick={() => handleFeatureClick(`feature-${index}`)} // Add onClick
+                  >
+                    <feature.icon className="mr-2 h-4 w-4" />
+                    {feature.title}
+                  </Button>
+                ))}
                     <Separator className="my-2" />
                     <Button variant="ghost" asChild>
                       <Link href="/login">Login</Link>
                     </Button>
                     <Button variant="ghost" asChild>
                       <Link href="/register">Register</Link>
+                    </Button>
+                    <Button variant="ghost" asChild>
+                      <Link href="/about">About</Link>
+                    </Button>
+                    <Button variant="ghost" asChild>
+                      <Link href="/contact">Contact</Link>
                     </Button>
                   </div>
                 </ScrollArea>
@@ -261,7 +284,7 @@ export default function WelcomePage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              Transform your productivity with AI-powered time management and task organization
+             TimeWise empowers you to manage tasks effortlessly with AI-driven roadmaps, smart session planning, deep work analytics, team collaboration tools, and real-time progress tracking—all designed to boost productivity and streamline your workflow.
             </motion.p>
             <motion.div
               className="flex justify-center space-x-4"
@@ -280,39 +303,40 @@ export default function WelcomePage() {
 
           {/* Features Grid */}
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <AnimatePresence>
-              {features.map((feature, index) => (
-                <motion.div
-                  key={feature.title}
-                  variants={featureCardVariants}
-                  initial="hidden"
-                  animate="visible"
-                  whileHover="hover"
-                  layout
-                >
-                  <Card className="h-full">
-                    <CardHeader>
-                      <div className="flex items-center space-x-2">
-                        <feature.icon className="h-6 w-6 text-primary" />
-                        <CardTitle>{feature.title}</CardTitle>
-                      </div>
-                      <CardDescription>{feature.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-2">
-                        {feature.details.map((detail, idx) => (
-                          <li key={idx} className="flex items-center space-x-2">
-                            <CheckCircle className="h-4 w-4 text-primary" />
-                            <span>{detail}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                </motion.div>
+  <AnimatePresence>
+    {features.map((feature, index) => (
+      <motion.div
+        key={feature.title}
+        variants={featureCardVariants}
+        id={`feature-${index}`}
+        initial="hidden"
+        animate="visible"
+        whileHover="hover"
+        layout
+      >
+        <Card className="h-full">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <feature.icon className="h-6 w-6 text-primary" />
+              <CardTitle>{feature.title}</CardTitle>
+            </div>
+            <CardDescription>{feature.description}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {feature.details.map((detail, idx) => (
+                <li key={idx} className="flex items-center space-x-2">
+                  <CheckCircle className="h-4 w-4 text-primary" />
+                  <span>{detail}</span>
+                </li>
               ))}
-            </AnimatePresence>
-          </section>
+            </ul>
+          </CardContent>
+        </Card>
+      </motion.div>
+    ))}
+  </AnimatePresence>
+</section>
         </motion.div>
       </main>
     </div>

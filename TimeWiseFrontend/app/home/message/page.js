@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Search, Send, Trash2, Users, Sparkles, FileText, MessageSquare, User } from 'lucide-react';
+import { Search, Send, Trash2, Users, Sparkles, FileText, MessageSquare, User, Eye, EyeOff } from 'lucide-react';
+import { AnalyzeDataButton } from '@/components/AnalyzeDataButton';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 
@@ -27,11 +28,9 @@ const MessageDashboard = () => {
   
   const [isInputFocused, setIsInputFocused] = useState(false);
 
-  
   // New message form state
   const [newMessage, setNewMessage] = useState({
     recipient: '',
-   
     messageDescription: '',
     isTeamMessage: false,
   });
@@ -48,9 +47,15 @@ const MessageDashboard = () => {
   const fetchMessages = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/messages/all`);
+      const response = await fetch(`/api/messages`);
       const messages = await response.json();
-      setMessages(messages);
+      
+      const sortedMessages = Array.isArray(messages)
+  ? messages.sort((a, b) => new Date(b.timeStamp) - new Date(a.timeStamp))
+  : []; 
+
+setMessages(sortedMessages);
+      setMessages(sortedMessages);
     } catch (error) {
       console.error('Error fetching messages:', error);
     } finally {
@@ -60,9 +65,9 @@ const MessageDashboard = () => {
 
   const handleSubmitMessage = async () => {
     try {
-      const endpoint = newMessage.isTeamMessage ? '/api/messages/team/send' : '/api/messages/user/send';
+      
       const subject = newMessage.isTeamMessage ? 'TEAM_MESSAGE':'USER_MESSAGE';
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/messages/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +83,6 @@ const MessageDashboard = () => {
         // Reset form and refresh messages
         setNewMessage({
           recipient: '',
-         
           messageDescription: '',
           isTeamMessage: false,
         });
@@ -109,24 +113,48 @@ const MessageDashboard = () => {
     }
   };
 
+  const handleMarkMessageStatus = async (messageId, status) => {
+    try {
+      const response = await fetch(`/api/messages/update-status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          messageId, 
+          status // 'READ' or another status
+        }),
+      });
+      
+      if (response.ok) {
+        fetchMessages();
+      } else {
+        const errorData = await response.json();
+        console.error('Error updating message status:', errorData);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
   const handleAutoCompleteMessageFromPrompt = async () => {
     if (!autoCompletingPrompt.trim()) return;
     
     try {
       setAutoCompletingMessage(true);
-      const response = await fetch('/api/messages/autocomplete', {
-        method: 'POST',
+      const response = await fetch(`/api/messages/autocomplete?messageSubject=${encodeURIComponent(autoCompletingPrompt)}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: autoCompletingPrompt }),
+        
       });
       
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.text();
         setNewMessage(prev => ({
           ...prev,
-          messageDescription: data.generatedMessage || data.text || data.content || '',
+          messageDescription: data || '',
         }));
         setShowPromptDialog(false);
       } else {
@@ -139,40 +167,33 @@ const MessageDashboard = () => {
     }
   };
 
-  const handleSummarizeMessages = async () => {
-    try {
-      setSummarizing(true);
-      const response = await fetch('/api/messages/summarize', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ limit: 50 }), // Optional limit parameter
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setSummaryText(data.summary || data.text || 'No summary available.');
-        setShowSummary(true);
-      } else {
-        console.error('Error summarizing messages');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setSummarizing(false);
+  
+  const useCurrentUser = () => {
+    if (typeof window !== 'undefined') {
+      const userData = JSON.parse(localStorage.getItem('TimeWiseUserData'));
+      return userData?.userName;
     }
+    return null; // Or some default value if localStorage is not available
   };
 
   const sentMessages = useMemo(() => {
-    return messages.filter(message => message.sender === UserCredentials.getCurrentUsername());
+    return messages.filter(message => message.sender === useCurrentUser());
   }, [messages]);
   
   const receivedMessages = useMemo(() => {
     return messages.filter(message => 
       message.recipients && 
-      message.recipients.includes(UserCredentials.getCurrentUsername())
+      message.recipients.includes(useCurrentUser())
     );
+  }, [messages]);
+
+  // Add seen/unseen message filtering
+  const readMessages = useMemo(() => {
+    return messages.filter(message => message.messageStatus === 'READ');
+  }, [messages]);
+  
+  const unreadMessages = useMemo(() => {
+    return messages.filter(message => message.messageStatus !== 'READ');
   }, [messages]);
 
   const filteredMessages = useMemo(() => {
@@ -182,7 +203,6 @@ const MessageDashboard = () => {
     return messages.filter(message => 
       (message.sender && message.sender.toLowerCase().includes(term)) ||
       (message.recipients && message.recipients.some(recipient => recipient.toLowerCase().includes(term))) ||
-     
       (message.messageDescription && message.messageDescription.toLowerCase().includes(term))
     );
   }, [messages, searchTerm]);
@@ -203,18 +223,20 @@ const MessageDashboard = () => {
   };
 
   const renderMessageItem = (message) => {
-    const isSender = message.sender === UserCredentials.getCurrentUsername();
+    const isSender = message.sender === useCurrentUser();
     const recipientText = message.recipients && message.recipients.length > 1 
       ? `${message.recipients.length} recipients` 
       : message.recipients && message.recipients[0];
     
+    const isRead = message.messageStatus === 'READ';
+    
     return (
-      <Card key={message.messageId} className="mb-4">
+      <Card key={`${message.messageId}-${message.timeStamp}`} className={`mb-4 ${!isRead ? 'border-l-4 border-l-blue-500' : ''}`}>
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-3">
               <Avatar>
-                <AvatarFallback className={isSender ? 'bg-blue-100' : 'bg-green-100'}>
+                <AvatarFallback className={isSender ? 'bg-blue-700' : 'bg-green-700'}>
                   {getInitials(isSender ? recipientText : message.sender)}
                 </AvatarFallback>
               </Avatar>
@@ -233,6 +255,18 @@ const MessageDashboard = () => {
                   {message.messageStatus}
                 </Badge>
               )}
+              
+              {!isSender && (
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => handleMarkMessageStatus(message.messageId, isRead ? 'DELIVERED' : 'READ')}
+                  title={isRead ? "Mark as unread" : "Mark as read"}
+                >
+                  {isRead ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              )}
+              
               <Button 
                 variant="ghost" 
                 size="icon"
@@ -254,7 +288,6 @@ const MessageDashboard = () => {
       </Card>
     );
   };
-
 
   useEffect(() => {
     try {
@@ -278,7 +311,6 @@ const MessageDashboard = () => {
     }
   }, [newMessage.isTeamMessage]);
   
-  
   const handleInputChange = (e) => {
     setNewMessage({ ...newMessage, recipient: e.target.value });
   };
@@ -287,18 +319,15 @@ const MessageDashboard = () => {
     setNewMessage({ ...newMessage, recipient: suggestion });
     setIsInputFocused(false);
   };
-  
-
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-1">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Messages Dashboard</h1>
         <div className="flex gap-2">
-          <Button onClick={handleSummarizeMessages} disabled={summarizing}>
-            <FileText className="mr-2 h-4 w-4" />
-            {summarizing ? 'Summarizing...' : 'Summarize Messages'}
-          </Button>
+          
+          <AnalyzeDataButton  data={messages} 
+        buttonText="Analyze Messages" />
         </div>
       </div>
 
@@ -339,45 +368,43 @@ const MessageDashboard = () => {
                 </div>
                 
                 <div>
-  <label htmlFor="recipient" className="block text-sm font-medium mb-1">
-    {newMessage.isTeamMessage ? 'Team' : 'Recipient'}
-  </label>
-  <div className="relative">
-    <Input
-      id="recipient"
-      placeholder={newMessage.isTeamMessage ? 'Team name' : 'Username of recipient'}
-      value={newMessage.recipient}
-      onChange={handleInputChange}
-      onFocus={() => setIsInputFocused(true)}
-      onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
-    />
-    
-    {isInputFocused && suggestions.length > 0 && (
-      <div className="absolute z-10 mt-1 w-full rounded-md bg-black shadow-lg border border-gray-900 max-h-60 overflow-auto">
-        <ul className="py-1 text-sm">
-          {suggestions
-            .filter(suggestion => 
-              suggestion.toLowerCase().includes(newMessage.recipient.toLowerCase())
-            )
-            .map((suggestion) => (
-              <li
-                key={suggestion}
-                className="cursor-pointer select-none py-2 px-4 hover:bg-gray-700"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  handleSuggestionClick(suggestion);
-                }}
-              >
-                {suggestion}
-              </li>
-            ))}
-        </ul>
-      </div>
-    )}
-  </div>
-</div>
-                
-                
+                  <label htmlFor="recipient" className="block text-sm font-medium mb-1">
+                    {newMessage.isTeamMessage ? 'Team' : 'Recipient'}
+                  </label>
+                  <div className="relative">
+                    <Input
+                      id="recipient"
+                      placeholder={newMessage.isTeamMessage ? 'Team name' : 'Username of recipient'}
+                      value={newMessage.recipient}
+                      onChange={handleInputChange}
+                      onFocus={() => setIsInputFocused(true)}
+                      onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
+                    />
+                    
+                    {isInputFocused && suggestions.length > 0 && (
+                      <div className="absolute z-10 mt-1 w-full rounded-md bg-black shadow-lg border border-gray-900 max-h-60 overflow-auto">
+                        <ul className="py-1 text-sm">
+                          {suggestions
+                            .filter(suggestion => 
+                              suggestion.toLowerCase().includes(newMessage.recipient.toLowerCase())
+                            )
+                            .map((suggestion) => (
+                              <li
+                                key={suggestion}
+                                className="cursor-pointer select-none py-2 px-4 hover:bg-gray-700"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  handleSuggestionClick(suggestion);
+                                }}
+                              >
+                                {suggestion}
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 
                 <div>
                   <div className="flex justify-between items-center mb-1">
@@ -407,7 +434,7 @@ const MessageDashboard = () => {
               <Button 
                 className="w-full" 
                 onClick={handleSubmitMessage}
-                disabled={!newMessage.recipient  || !newMessage.messageDescription}
+                disabled={!newMessage.recipient || !newMessage.messageDescription}
               >
                 <Send className="mr-2 h-4 w-4" />
                 Send Message
@@ -437,6 +464,8 @@ const MessageDashboard = () => {
               <Tabs defaultValue="all">
                 <TabsList className="mb-4">
                   <TabsTrigger value="all">All ({messages.length})</TabsTrigger>
+                  <TabsTrigger value="unread">Unread ({unreadMessages.length})</TabsTrigger>
+                  <TabsTrigger value="read">Read ({readMessages.length})</TabsTrigger>
                   <TabsTrigger value="sent">Sent ({sentMessages.length})</TabsTrigger>
                   <TabsTrigger value="received">Received ({receivedMessages.length})</TabsTrigger>
                 </TabsList>
@@ -447,8 +476,52 @@ const MessageDashboard = () => {
                   ) : filteredMessages.length === 0 ? (
                     <div className="text-center py-8">No messages found</div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                       {filteredMessages.map(renderMessageItem)}
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="unread">
+                  {loading ? (
+                    <div className="text-center py-8">Loading messages...</div>
+                  ) : unreadMessages.length === 0 ? (
+                    <div className="text-center py-8">No unread messages</div>
+                  ) : (
+                    <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                      {unreadMessages
+                        .filter(message => {
+                          if (!searchTerm) return true;
+                          const term = searchTerm.toLowerCase();
+                          return (
+                            (message.sender && message.sender.toLowerCase().includes(term)) ||
+                            (message.recipients && message.recipients.some(recipient => recipient.toLowerCase().includes(term))) ||
+                            (message.messageDescription && message.messageDescription.toLowerCase().includes(term))
+                          );
+                        })
+                        .map(renderMessageItem)}
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="read">
+                  {loading ? (
+                    <div className="text-center py-8">Loading messages...</div>
+                  ) : readMessages.length === 0 ? (
+                    <div className="text-center py-8">No read messages</div>
+                  ) : (
+                    <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                      {readMessages
+                        .filter(message => {
+                          if (!searchTerm) return true;
+                          const term = searchTerm.toLowerCase();
+                          return (
+                            (message.sender && message.sender.toLowerCase().includes(term)) ||
+                            (message.recipients && message.recipients.some(recipient => recipient.toLowerCase().includes(term))) ||
+                            (message.messageDescription && message.messageDescription.toLowerCase().includes(term))
+                          );
+                        })
+                        .map(renderMessageItem)}
                     </div>
                   )}
                 </TabsContent>
@@ -459,14 +532,13 @@ const MessageDashboard = () => {
                   ) : sentMessages.length === 0 ? (
                     <div className="text-center py-8">No sent messages</div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                       {sentMessages
                         .filter(message => {
                           if (!searchTerm) return true;
                           const term = searchTerm.toLowerCase();
                           return (
                             (message.recipients && message.recipients.some(recipient => recipient.toLowerCase().includes(term))) ||
-                           
                             (message.messageDescription && message.messageDescription.toLowerCase().includes(term))
                           );
                         })
@@ -481,14 +553,13 @@ const MessageDashboard = () => {
                   ) : receivedMessages.length === 0 ? (
                     <div className="text-center py-8">No received messages</div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                       {receivedMessages
                         .filter(message => {
                           if (!searchTerm) return true;
                           const term = searchTerm.toLowerCase();
                           return (
                             (message.sender && message.sender.toLowerCase().includes(term)) ||
-                           
                             (message.messageDescription && message.messageDescription.toLowerCase().includes(term))
                           );
                         })

@@ -2,7 +2,7 @@
 
 export async function POST(req) {
   try {
-    console.log("inside post");
+    
     const userData = await req.json();
     const response = await fetch(`${process.env.BACKEND_SERVER_URL}/api/users/register/request`, {
       method: 'POST',

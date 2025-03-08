@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useTheme } from "next-themes";
-import { Menu, Search, Bell, MessageSquare, Settings, User } from "lucide-react";
+import { Menu, Search, Bell, MessageSquare, Settings,BarChart3, User } from "lucide-react";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -33,38 +34,100 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ModeToggle } from "@/components/ModeToggle";
+import { Bar } from "recharts";
 
 const mainNavItems = [
   {
-    title: "Dashboard",
-    href: "/dashboard",
+    title: "TimeWise Labs",
+    href: "/timewise-lab",
   },
   {
-    title: "Tasks",
-    href: "/tasks",
+    title: "About",
+    href: "/about",
   },
   {
-    title: "Teams",
-    href: "/teams",
+    title: "Contact",
+    href: "/contact",
   },
   {
-    title: "Analytics",
-    href: "/analytics",
+    title: "Search",
+    href: "/home/search",
   },
+ 
+];
+
+
+const mainNavItemsForMobile = [
+  {
+    title: "TimeWise Labs",
+    href: "/timewise-lab",
+  },
+  {
+    title: "Search User",
+    href: "/home/search",
+  },
+  {
+    title: "Create Task",
+    href: "/home/task/create",
+  },
+  {
+    title: "Generate Roadmap",
+    href: "/home/roadmap/generate",
+  },
+  {
+    title: "My Progress",
+    href: "/home/progress-report",
+  },{
+    title: "Performance Report",
+    href: "/home/performance-report",
+  },
+  {
+    title: "Create Session",
+    href: "/home/session",
+  },
+  {
+    title: "My Teams",
+    href: "/home/team",
+  },
+  {
+    title: "Feedback",
+    href: "/home/feedback",
+  },
+  {
+    title: "Deep Work Analytics",
+    href: "/home/deep-work-analytics",
+  },
+  {
+    title: "Notification",
+    href: "/home/notification",
+  },
+  {
+    title: "Message",
+    href: "/home/message",
+  },
+  {
+    title: "About",
+    href: "/about",
+  },
+  {
+    title: "Contact",
+    href: "/contact",
+  }
+ 
 ];
 
 const quickActions = [
-  { icon: Bell, label: "Notifications", href: "/notifications" },
-  { icon: MessageSquare, label: "Messages", href: "/messages" },
-  { icon: Settings, label: "Settings", href: "/settings" },
+  { icon: Bell, label: "Notifications", href: "/home/notification" },
+  { icon: MessageSquare, label: "Messages", href: "/home/message" },
+  { icon: BarChart3, label: "Statistics", href: "/home/statistics/account" },
 ];
 
 export function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
-
+  const router = useRouter();
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/120 ${theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50'}">
-      <div className="container flex h-14 items-center px-4">
+    <header className="sticky top-0 z-5 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/120">
+      <div className="container flex items-center px-4">
         <div className="flex items-center space-x-4">
           {/* Mobile Menu */}
           <Sheet>
@@ -74,18 +137,18 @@ export function Navbar() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-              <SheetHeader>
+              <SheetHeader className="pb-2"> {/* Reduced padding bottom */}
                 <SheetTitle>Menu</SheetTitle>
                 <SheetDescription>
                   Navigate through your workspace
                 </SheetDescription>
               </SheetHeader>
-              <div className="flex flex-col space-y-4 mt-4">
-                {mainNavItems.map((item) => (
+              <div className="flex flex-col space-y-2 mt-2 overflow-y-auto max-h-[80vh]"> {/* Reduced space-y and mt */}
+                {mainNavItemsForMobile.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="flex items-center p-2 hover:bg-accent rounded-lg"
+                    className="flex items-center p-1 hover:bg-accent rounded-lg"
                   >
                     {item.title}
                   </Link>
@@ -93,7 +156,7 @@ export function Navbar() {
               </div>
             </SheetContent>
           </Sheet>
-
+  
           {/* Logo */}
           <div className="flex items-center space-x-4">
             <Image
@@ -107,7 +170,7 @@ export function Navbar() {
               TimeWise
             </span>
           </div>
-
+  
           {/* Desktop Navigation */}
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
@@ -123,18 +186,9 @@ export function Navbar() {
             </NavigationMenuList>
           </NavigationMenu>
         </div>
-
+  
         {/* Right side items */}
         <div className="flex items-center ml-auto space-x-4">
-          {/* Search */}
-          <div className="hidden md:flex">
-            <Input
-              type="search"
-              placeholder="Search..."
-              className="w-[200px] lg:w-[300px]"
-            />
-          </div>
-
           {/* Quick Actions */}
           <div className="flex items-center space-x-2">
             {quickActions.map(({ icon: Icon, label, href }) => (
@@ -143,16 +197,17 @@ export function Navbar() {
                 variant="ghost"
                 size="icon"
                 className="hidden sm:inline-flex"
+                onClick={() => router.push(href)}
               >
                 <Icon className="h-5 w-5" />
                 <span className="sr-only">{label}</span>
               </Button>
             ))}
           </div>
-
+  
           {/* Theme Toggle */}
           <ModeToggle />
-
+  
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -164,11 +219,18 @@ export function Navbar() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Help</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Log out</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                localStorage.removeItem('UserAccountName');
+                window.location.href = '/home/account';
+              }}>Profile</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                localStorage.removeItem('timewise-auth-token');
+                localStorage.removeItem('TimeWiseTask');
+                localStorage.removeItem('TimeWiseTeam');
+                localStorage.removeItem('TimeWiseUserData');
+                localStorage.removeItem('TimeWiseCurrentSession');
+                window.location.href = '/welcome';
+              }}>Log out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

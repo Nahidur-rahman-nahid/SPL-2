@@ -34,7 +34,8 @@ export async function POST(req) {
     }
 
     const responseText = await response.text();
-    return NextResponse.text(responseText, { status: 201 });
+    return NextResponse.json({ message: responseText }, { status: 201 });
+
   } catch (error) {
     console.error('Feedback Sending Error:', error);
     return NextResponse.json(

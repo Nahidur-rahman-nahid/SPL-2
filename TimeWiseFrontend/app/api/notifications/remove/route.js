@@ -3,13 +3,12 @@ import { cookies } from 'next/headers';
 
 export async function DELETE(req) {
   try {
-    const url = new URL(req.url);
-    const feedbackId = url.searchParams.get('feedbackId');
-
+    
+    const feedback=await req.json();
    
-    if (!feedbackId) {
+    if (!feedback) {
       return NextResponse.json(
-        { error: 'Feedback Id is required' }, 
+        { error: 'Feedback  is required' }, 
         { status: 400 }
       );
     }
@@ -21,12 +20,13 @@ export async function DELETE(req) {
         }
 
     const response = await fetch(
-      `${process.env.BACKEND_SERVER_URL}/api/feedbacks/remove?feedbackId=${feedbackId}`,
+      `${process.env.BACKEND_SERVER_URL}/api/feedbacks/remove`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
          },
+         body: JSON.stringify(feedback),
       }
     );
 

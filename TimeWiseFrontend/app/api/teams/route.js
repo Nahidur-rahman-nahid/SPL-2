@@ -25,7 +25,7 @@ export async function GET(req) {
     if (!response.ok) {
       const errorText = await response.text();
       return NextResponse.json(
-        { error: errorText || 'Failed to fetch user teams' },
+       
         { status: response.status }
       );
     }

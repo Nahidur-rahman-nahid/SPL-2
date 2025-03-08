@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Clock, ArrowLeft, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import AnalyzeDataButton from '@/components/AnalyzeDataButton';
 
 const PreviousSessionsPage = () => {
   const [sessions, setSessions] = useState([]);
@@ -47,7 +48,7 @@ const PreviousSessionsPage = () => {
         <CardTitle className="text-lg">
           {format(new Date(session.sessionTimeStamp), 'PPP')}
         </CardTitle>
-        <CardDescription>{session.scenario || 'Meditation Session'}</CardDescription>
+        <CardDescription>{session.scenario || 'Working Session'}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
@@ -84,7 +85,10 @@ const PreviousSessionsPage = () => {
                 Back to Sessions
               </Button>
             </Link>
+            
           </div>
+          <AnalyzeDataButton data={sessions} 
+                              buttonText="Analyze Session Data"/>
           <Button variant="outline" onClick={fetchSessions}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
@@ -95,7 +99,7 @@ const PreviousSessionsPage = () => {
           <Card className="col-span-1">
             <CardHeader>
               <CardTitle>Previous Sessions</CardTitle>
-              <CardDescription>Your meditation journey</CardDescription>
+              <CardDescription>Your Working journey</CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[calc(100vh-300px)]">
@@ -107,7 +111,7 @@ const PreviousSessionsPage = () => {
                   <Alert>
                     <AlertTitle>No sessions yet</AlertTitle>
                     <AlertDescription>
-                      Start your first meditation session to begin your journey.
+                      Start your first Working session to begin your journey.
                     </AlertDescription>
                   </Alert>
                 ) : (
@@ -142,7 +146,7 @@ const PreviousSessionsPage = () => {
                     <div>
                       <h3 className="font-medium mb-2">Environment</h3>
                       <p className="text-muted-foreground">
-                        {selectedSession.scenario || 'Classic Meditation'}
+                        {selectedSession.scenario || 'Classic Working'}
                       </p>
                     </div>
                     <div>

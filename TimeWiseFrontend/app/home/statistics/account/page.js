@@ -43,6 +43,7 @@ import {
   Calendar,
   Star
 } from 'lucide-react';
+import AnalyzeDataButton from '@/components/AnalyzeDataButton';
 
 const UserStatisticsDashboard = () => {
   const [statistics, setStatistics] = useState(null);
@@ -191,30 +192,41 @@ const UserStatisticsDashboard = () => {
     }));
   };
 
-  const FeedbackScoreHistogram = () => (
-    <ResponsiveContainer width="100%" height={400}>
-      <BarChart 
-        data={prepareFeedbackHistogram()} 
-        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis 
-          dataKey="score" 
-          label={{ value: 'Score', position: 'bottom' }}
-        />
-        <YAxis 
-          label={{ value: 'Frequency', angle: -90, position: 'insideLeft' }}
-        />
-        <Tooltip />
-        <Bar dataKey="count">
-          {prepareFeedbackHistogram().map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  );
-
+  const FeedbackScoreHistogram = () => {
+    const histogramData = prepareFeedbackHistogram();
+  
+    // Validate the data
+    const validHistogramData = histogramData.filter(
+      (entry) => typeof entry.score === 'number' && typeof entry.count === 'number'
+    );
+  
+    return (
+      <ResponsiveContainer width="100%" height={400}>
+        <BarChart
+          data={validHistogramData} // Use the validated data
+          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey="score"
+            label={{ value: 'Score', position: 'bottom' }}
+          />
+          <YAxis
+            label={{ value: 'Frequency', angle: -90, position: 'insideLeft' }}
+          />
+          <Tooltip />
+          <Bar dataKey="count">
+            {validHistogramData.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={chartColors[index % chartColors.length]}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  };
   const FeedbackScoreTimeline = () => (
     <ResponsiveContainer width="100%" height={400}>
       <LineChart 
@@ -307,12 +319,14 @@ const UserStatisticsDashboard = () => {
   );
 
   return (
-    <div className="space-y-8 mt-12">
+    <div className="space-y-2 ">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-2xl font-bold">
             User Statistics Dashboard
           </CardTitle>
+          <AnalyzeDataButton data={statistics} 
+        buttonText="Analyze Account Stats"/>
           <Button
             variant="outline"
             onClick={() => setShowDaysDialog(true)}

@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Search, Send, Trash2, BarChart2, Sparkles, FileText, MessageSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
+import AnalyzeDataButton from '@/components/AnalyzeDataButton';
 
 const FeedbackDashboard = () => {
   const router = useRouter();
@@ -23,6 +24,10 @@ const FeedbackDashboard = () => {
   const [showSummary, setShowSummary] = useState(false);
   const [summaryText, setSummaryText] = useState('');
   const [summarizing, setSummarizing] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+   const [selectedTask, setSelectedTask] = useState('');
+      const [availableTasks, setAvailableTasks] = useState([]);
   
   // New feedback form state
   const [newFeedback, setNewFeedback] = useState({
@@ -44,7 +49,7 @@ const FeedbackDashboard = () => {
   const fetchFeedbacks = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/feedbacks/all`);
+      const response = await fetch(`/api/feedbacks`);
       const feedbacks = await response.json();
       const sortedFeedbacks = feedbacks.sort((a, b) => {
         return new Date(b.timeStamp) - new Date(a.timeStamp);
@@ -56,6 +61,19 @@ const FeedbackDashboard = () => {
       setLoading(false);
     }
   };
+
+   useEffect(() => {
+        const userData = JSON.parse(localStorage.getItem('TimeWiseUserData'));
+        const currentUser = userData?.userName; 
+      
+        if (userData?.userTasks && currentUser) {
+          const filteredTasks = userData.userTasks
+            .filter((task) => task.taskOwner === currentUser);
+          setAvailableTasks(filteredTasks);
+        } else {
+          setAvailableTasks([]);
+        }
+      }, []);
 
   const handleSubmitFeedback = async () => {
     try {
@@ -85,11 +103,16 @@ const FeedbackDashboard = () => {
     }
   };
 
-  const handleRemoveFeedback = async (feedbackId) => {
+  const handleRemoveFeedback = async (feedback) => {
     try {
-      const response = await fetch(`/api/feedbacks/remove?feedbackId=${feedbackId}`, {
-        method: 'DELETE',
-      });
+      console.log("Feedback object to remove:", feedback);
+        const response = await fetch(`/api/feedbacks/remove`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(feedback), 
+        });
       
       if (response.ok) {
         fetchFeedbacks();
@@ -107,19 +130,19 @@ const FeedbackDashboard = () => {
     
     try {
       setautoCompletingFeedback(true);
-      const response = await fetch('/api/feedback/autocomplete', {
-        method: 'POST',
+      const response = await fetch(`/api/feedbacks/autocomplete?feedbackSubject=${encodeURIComponent(autoCompletingPrompt)}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: autoCompletingPrompt }),
+        
       });
       
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.text();
         setNewFeedback(prev => ({
           ...prev,
-          feedbackMessage: data.generatedFeedback || data.text || data.content || '',
+          feedbackMessage: data || '',
         }));
         setShowPromptDialog(false);
       } else {
@@ -131,7 +154,10 @@ const FeedbackDashboard = () => {
       setautoCompletingFeedback(false);
     }
   };
-
+  const handleSuggestionClick = (suggestion) => {
+    setNewFeedback({ ...newFeedback, feedbackRecipient: suggestion });
+    setIsInputFocused(false);
+  };
   const handleSummarizeFeedbacks = async () => {
     try {
       setSummarizing(true);
@@ -140,7 +166,7 @@ const FeedbackDashboard = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ limit: 50 }), // Optional limit parameter
+        body: JSON.stringify({ limit: 50 }), 
       });
       
       if (response.ok) {
@@ -161,7 +187,7 @@ const FeedbackDashboard = () => {
       const userData = JSON.parse(localStorage.getItem('TimeWiseUserData'));
       return userData?.userName;
     }
-    return null; // Or some default value if localStorage is not available
+    return null; 
   };
 
   const sentFeedbacks = useMemo(() => {
@@ -243,23 +269,57 @@ const FeedbackDashboard = () => {
       </Card>
     );
   };
+    useEffect(() => {
+      try {
+        const userData = JSON.parse(localStorage.getItem('TimeWiseUserData'));
+        if (userData) {
+           if ( userData.usersFollowing) {
+            setSuggestions(userData.usersFollowing);
+          } else {
+            setSuggestions([]);
+          }
+        } else {
+          setSuggestions([]);
+        }
+      } catch (error) {
+        console.error('Error parsing userData from localStorage:', error);
+        setSuggestions([]);
+      }
+    }, []);
+     useEffect(() => {
+          const userData = JSON.parse(localStorage.getItem('TimeWiseUserData'));
+          const currentUser = userData?.userName; 
+        
+          if (userData?.userTasks && currentUser) {
+            const filteredTasks = userData.userTasks
+              .filter((task) => task.taskOwner === currentUser) 
+              .map((task) => task.taskName)
+              ;
+            setAvailableTasks(filteredTasks);
+          } else {
+            setAvailableTasks([]);
+          }
+        }, []);
+        const filteredTasks = availableTasks.filter((task) =>
+          task.toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-1">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Feedback Dashboard</h1>
         <div className="flex gap-2">
           <Button 
             variant="outline" 
-            onClick={() => router.push('/statistics/feedback')}
+            onClick={() => router.push('/home/statistics/feedback')}
           >
             <BarChart2 className="mr-2 h-4 w-4" />
             Feedback Statistics
           </Button>
-          <Button onClick={handleSummarizeFeedbacks} disabled={summarizing}>
-            <FileText className="mr-2 h-4 w-4" />
-            {summarizing ? 'Summarizing...' : 'Summarize Feedback'}
-          </Button>
+           <AnalyzeDataButton
+                                    data={feedbacks}
+                                    buttonText="Analyze Feedbacks"
+                                  />
         </div>
       </div>
 
@@ -283,20 +343,63 @@ const FeedbackDashboard = () => {
                     id="recipient"
                     placeholder="Username of recipient"
                     value={newFeedback.feedbackRecipient}
+                    onFocus={() => setIsInputFocused(true)}
                     onChange={(e) => setNewFeedback({...newFeedback, feedbackRecipient: e.target.value})}
+                    onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
                   />
+                  {isInputFocused && suggestions.length > 0 && (
+  <div className="absolute z-10 mt-1 w-full max-w-[300px] rounded-md bg-black shadow-lg border border-gray-900 max-h-60 overflow-auto">
+    <ul className="py-1 text-sm">
+      {suggestions
+        .filter(suggestion => 
+          suggestion.toLowerCase().includes(newFeedback.feedbackRecipient.toLowerCase())
+        )
+        .map((suggestion) => (
+          <li
+            key={suggestion}
+            className="cursor-pointer select-none py-2 px-4 hover:bg-gray-700 whitespace-nowrap overflow-hidden text-ellipsis"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              handleSuggestionClick(suggestion);
+              setIsInputFocused(false);
+            }}
+          >
+            {suggestion}
+          </li>
+        ))}
+    </ul>
+  </div>
+)}
+
                 </div>
                 
                 <div>
                   <label htmlFor="task" className="block text-sm font-medium mb-1">
                     Task Name
                   </label>
-                  <Input 
-                    id="task"
-                    placeholder="Name of the task"
-                    value={newFeedback.feedbackTaskName}
-                    onChange={(e) => setNewFeedback({...newFeedback, feedbackTaskName: e.target.value})}
-                  />
+                  <Select
+  value={newFeedback.feedbackTaskName} 
+  onValueChange={(value) => setNewFeedback({ ...newFeedback, feedbackTaskName: value })}
+>
+  <SelectTrigger className="w-full">
+    <SelectValue placeholder="Select a task" />
+  </SelectTrigger>
+
+  <SelectContent className="max-h-[200px]">
+    {filteredTasks.length > 0 ? (
+      filteredTasks.map((task) => (
+        <SelectItem key={task} value={task}>
+          {task}
+        </SelectItem>
+      ))
+    ) : (
+      <div className="p-2 text-center text-muted-foreground">
+        {searchTerm ? 'No matching tasks found' : 'No available tasks'}
+      </div>
+    )}
+  </SelectContent>
+</Select>
+
                 </div>
                 
                 <div>

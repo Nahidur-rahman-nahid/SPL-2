@@ -36,6 +36,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import AnalyzeDataButton from '@/components/AnalyzeDataButton';
+
 
 const TaskStatisticsDashboard = () => {
   const [taskStats, setTaskStats] = useState(null);
@@ -265,12 +267,14 @@ const TaskStatisticsDashboard = () => {
   };
 
   return (
-    <div className="space-y-8 mt-12">
+    <div className="space-y-2 ">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-2xl font-bold">
             Task Statistics Dashboard
           </CardTitle>
+          <AnalyzeDataButton data={taskStats} 
+                  buttonText="Analyze Tasks Stats"/>
           <Button
                                 variant="outline"
                                 onClick={() => setShowDaysDialog(true)}

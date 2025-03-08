@@ -44,6 +44,7 @@ import {
   Timer,
   CheckCircle2
 } from 'lucide-react';
+import AnalyzeDataButton from '@/components/AnalyzeDataButton';
 
 const DeepWorkDashboard = () => {
   const [deepWorkData, setDeepWorkData] = useState(null);
@@ -69,7 +70,7 @@ const DeepWorkDashboard = () => {
   const fetchDeepWorkData = async (days) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/analytics?previousNumberOfDays=${days}`);
+      const response = await fetch(`/api/deep-work-analytics?previousNumberOfDays=${days}`);
       if (!response.ok) {
         throw new Error('Failed to fetch deep work data');
       }
@@ -97,7 +98,7 @@ const DeepWorkDashboard = () => {
   if (showDaysDialog) {
     return (
       <Dialog open={showDaysDialog} onOpenChange={setShowDaysDialog}>
-        <DialogContent className="sm:max-w-md dark:bg-gray-800">
+        <DialogContent className="sm:max-w-md dark:bg-black">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold dark:text-white">
               Select Analysis Period
@@ -117,7 +118,7 @@ const DeepWorkDashboard = () => {
                 min="1"
                 max="365"
                 required
-                className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                className="dark:bg-black dark:text-white dark:border-gray-900"
               />
             </div>
             <Button type="submit" className="w-full">
@@ -131,7 +132,7 @@ const DeepWorkDashboard = () => {
 
   if (loading) {
     return (
-      <Card className="w-full h-96 flex items-center justify-center mt-8 dark:bg-gray-800">
+      <Card className="w-full h-96 flex items-center justify-center mt-8 dark:bg-black">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
           <p className="text-muted-foreground dark:text-gray-300">Loading deep work analytics...</p>
@@ -149,55 +150,67 @@ const DeepWorkDashboard = () => {
     );
   }
 
-  // Data processing functions
   const processTimeData = () => {
     if (!deepWorkData) return [];
-    
+
     if (timeGrouping === 'hourly') {
-      return deepWorkData.map(item => ({
-        timeSlot: item.timeSlot,
-        hoursWorked: Number(item.totalHoursWorked.toFixed(2)),
-        tasks: item.totalTasksOperated,
-        efficiency: Number(item.averageEfficiencyScore.toFixed(2)),
-        sessions: item.sessionCount
-      }));
+        return deepWorkData.map(item => {
+            let hour = parseInt(item.timeSlot);
+            let nextHour = (hour + 1) % 24;
+
+            const formatHour = (h) => {
+                let ampm = h >= 12 ? 'PM' : 'AM';
+                let formattedHour = h % 12 === 0 ? 12 : h % 12;
+                return `${formattedHour}:00 ${ampm}`;
+            };
+
+            const timeSlotRange = `${formatHour(hour)} - ${formatHour(nextHour)}`;
+
+            return {
+                timeSlot: timeSlotRange,
+                hoursWorked: Number(item.totalHoursWorked.toFixed(2)),
+                tasks: item.totalTasksOperated,
+                efficiency: Number(item.averageEfficiencyScore.toFixed(2)),
+                sessions: item.sessionCount
+            };
+        });
     } else {
-      // Group by morning/afternoon/evening/night
-      const timeGroups = {
-        'Morning (6AM-12PM)': [],
-        'Afternoon (12PM-6PM)': [],
-        'Evening (6PM-12AM)': [],
-        'Night (12AM-6AM)': []
-      };
-
-      deepWorkData.forEach(item => {
-        const hour = parseInt(item.timeSlot.split(':')[0]);
-        let group;
-        if (hour >= 6 && hour < 12) group = 'Morning (6AM-12PM)';
-        else if (hour >= 12 && hour < 18) group = 'Afternoon (12PM-6PM)';
-        else if (hour >= 18) group = 'Evening (6PM-12AM)';
-        else group = 'Night (12AM-6AM)';
-
-        timeGroups[group].push(item);
-      });
-
-      return Object.entries(timeGroups).map(([group, items]) => {
-        const totalHours = items.reduce((sum, item) => sum + item.totalHoursWorked, 0);
-        const totalTasks = items.reduce((sum, item) => sum + item.totalTasksOperated, 0);
-        const avgEfficiency = items.length ? 
-          items.reduce((sum, item) => sum + item.averageEfficiencyScore, 0) / items.length : 0;
-        const totalSessions = items.reduce((sum, item) => sum + item.sessionCount, 0);
-
-        return {
-          timeSlot: group,
-          hoursWorked: Number(totalHours.toFixed(2)),
-          tasks: totalTasks,
-          efficiency: Number(avgEfficiency.toFixed(2)),
-          sessions: totalSessions
+        
+        const timeGroups = {
+            'Morning (6AM-12PM)': [],
+            'Afternoon (12PM-6PM)': [],
+            'Evening (6PM-12AM)': [],
+            'Night (12AM-6AM)': []
         };
-      });
+
+        deepWorkData.forEach(item => {
+            const hour = parseInt(item.timeSlot.split(':')[0]);
+            let group;
+            if (hour >= 6 && hour < 12) group = 'Morning (6AM-12PM)';
+            else if (hour >= 12 && hour < 18) group = 'Afternoon (12PM-6PM)';
+            else if (hour >= 18) group = 'Evening (6PM-12AM)';
+            else group = 'Night (12AM-6AM)';
+
+            timeGroups[group].push(item);
+        });
+
+        return Object.entries(timeGroups).map(([group, items]) => {
+            const totalHours = items.reduce((sum, item) => sum + item.totalHoursWorked, 0);
+            const totalTasks = items.reduce((sum, item) => sum + item.totalTasksOperated, 0);
+            const avgEfficiency = items.length ?
+                items.reduce((sum, item) => sum + item.averageEfficiencyScore, 0) / items.length : 0;
+            const totalSessions = items.reduce((sum, item) => sum + item.sessionCount, 0);
+
+            return {
+                timeSlot: group,
+                hoursWorked: Number(totalHours.toFixed(2)),
+                tasks: totalTasks,
+                efficiency: Number(avgEfficiency.toFixed(2)),
+                sessions: totalSessions
+            };
+        });
     }
-  };
+};
 
   const calculateSummaryMetrics = () => {
     if (!deepWorkData) return null;
@@ -224,7 +237,7 @@ const DeepWorkDashboard = () => {
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="dark:bg-gray-800 hover:shadow-lg transition-shadow">
+        <Card className="dark:bg-black hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium dark:text-white">
               Total Deep Work Hours
@@ -239,7 +252,7 @@ const DeepWorkDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="dark:bg-gray-800 hover:shadow-lg transition-shadow">
+        <Card className="dark:bg-black hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium dark:text-white">
               Average Efficiency
@@ -254,7 +267,7 @@ const DeepWorkDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="dark:bg-gray-800 hover:shadow-lg transition-shadow">
+        <Card className="dark:bg-black hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium dark:text-white">
               Total Tasks Completed
@@ -269,7 +282,7 @@ const DeepWorkDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="dark:bg-gray-800 hover:shadow-lg transition-shadow">
+        <Card className="dark:bg-black hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium dark:text-white">
               Total Sessions
@@ -349,14 +362,14 @@ const DeepWorkDashboard = () => {
 
   return (
     <div className="space-y-8 mt-12">
-      <Card className="dark:bg-gray-800">
+      <Card className="dark:bg-black">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-2xl font-bold dark:text-white">
             Deep Work Analytics Dashboard
           </CardTitle>
           <div className="flex space-x-4">
             <Select value={timeGrouping} onValueChange={setTimeGrouping}>
-              <SelectTrigger className="w-[180px] dark:bg-gray-700 dark:text-white">
+              <SelectTrigger className="w-[180px] dark:bg-gray-900 dark:text-white">
                 <SelectValue placeholder="Select time grouping" />
               </SelectTrigger>
               <SelectContent>
@@ -364,10 +377,14 @@ const DeepWorkDashboard = () => {
                 <SelectItem value="period">Time Period Groups</SelectItem>
               </SelectContent>
             </Select>
+            <AnalyzeDataButton
+                            data={deepWorkData}
+                            buttonText="Analyze Deep Work Results"
+                          />
             <Button
              variant="outline"
               onClick={() => setShowDaysDialog(true)}
-              className="dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+              className="dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800"
             >
               Change Period
             </Button>
@@ -375,24 +392,24 @@ const DeepWorkDashboard = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={selectedVisualization} onValueChange={setSelectedVisualization}>
-            <TabsList className="grid w-full grid-cols-5 dark:bg-gray-700">
-              <TabsTrigger value="overview" className="dark:text-gray-200 dark:data-[state=active]:bg-gray-600">
+            <TabsList className="grid w-full grid-cols-5 dark:bg-gray-900">
+              <TabsTrigger value="overview" className="dark:text-gray-200 dark:data-[state=active]:bg-gray-800">
                 <Activity className="w-4 h-4 mr-2" />
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="time" className="dark:text-gray-200 dark:data-[state=active]:bg-gray-600">
+              <TabsTrigger value="time" className="dark:text-gray-200 dark:data-[state=active]:bg-gray-800">
                 <Clock className="w-4 h-4 mr-2" />
                 Time Analysis
               </TabsTrigger>
-              <TabsTrigger value="productivity" className="dark:text-gray-200 dark:data-[state=active]:bg-gray-600">
+              <TabsTrigger value="productivity" className="dark:text-gray-200 dark:data-[state=active]:bg-gray-800">
                 <Target className="w-4 h-4 mr-2" />
                 Productivity
               </TabsTrigger>
-              <TabsTrigger value="efficiency" className="dark:text-gray-200 dark:data-[state=active]:bg-gray-600">
+              <TabsTrigger value="efficiency" className="dark:text-gray-200 dark:data-[state=active]:bg-gray-800">
                 <Star className="w-4 h-4 mr-2" />
                 Efficiency
               </TabsTrigger>
-              <TabsTrigger value="insights" className="dark:text-gray-200 dark:data-[state=active]:bg-gray-600">
+              <TabsTrigger value="insights" className="dark:text-gray-200 dark:data-[state=active]:bg-gray-800">
                 <Brain className="w-4 h-4 mr-2" />
                 Insights
               </TabsTrigger>
@@ -400,101 +417,109 @@ const DeepWorkDashboard = () => {
 
             <TabsContent value="overview" className="space-y-4">
               <MetricsOverview />
-              <Card className="dark:bg-gray-800">
+              <Card className="dark:bg-black">
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold dark:text-white">
                     Quick Summary
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-4 rounded-lg bg-blue-50 dark:bg-gray-700">
-                        <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">
-                          Peak Performance Time
-                        </h4>
-                        {(() => {
-                          const peakEfficiency = processTimeData().reduce((max, item) => 
-                            item.efficiency > max.efficiency ? item : max
-                          );
-                          return (
-                            <div className="space-y-2">
-                              <p className="text-lg font-bold text-blue-800 dark:text-blue-100">
-                                {peakEfficiency.timeSlot}
-                              </p>
-                              <p className="text-sm text-blue-600 dark:text-blue-300">
-                                Efficiency: {peakEfficiency.efficiency}%
-                              </p>
-                            </div>
-                          );
-                        })()}
-                      </div>
+  <div className="space-y-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="p-4 rounded-lg bg-blue-50 dark:bg-gray-900">
+        <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">
+          Peak Performance Time
+        </h4>
+        {(() => {
+          const timeData = processTimeData();
+          if (timeData.length === 0) {
+            return <p>No data available</p>;
+          }
+          const peakEfficiency = timeData.reduce((max, item) => 
+            item.efficiency > max.efficiency ? item : max, timeData[0]
+          );
+          return (
+            <div className="space-y-2">
+              <p className="text-lg font-bold text-blue-800 dark:text-blue-100">
+                {peakEfficiency.timeSlot}
+              </p>
+              <p className="text-sm text-blue-600 dark:text-blue-300">
+                Efficiency: {peakEfficiency.efficiency}%
+              </p>
+            </div>
+          );
+        })()}
+      </div>
 
-                      <div className="p-4 rounded-lg bg-green-50 dark:bg-gray-700">
-                        <h4 className="text-sm font-medium text-green-900 dark:text-green-200 mb-2">
-                          Most Productive Period
-                        </h4>
-                        {(() => {
-                          const peakProductivity = processTimeData().reduce((max, item) => 
-                            (item.tasks / item.hoursWorked) > (max.tasks / max.hoursWorked) ? item : max
-                          );
-                          return (
-                            <div className="space-y-2">
-                              <p className="text-lg font-bold text-green-800 dark:text-green-100">
-                                {peakProductivity.timeSlot}
-                              </p>
-                              <p className="text-sm text-green-600 dark:text-green-300">
-                                {(peakProductivity.tasks / peakProductivity.hoursWorked).toFixed(1)} tasks/hour
-                              </p>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
+      <div className="p-4 rounded-lg bg-green-50 dark:bg-gray-900">
+        <h4 className="text-sm font-medium text-green-900 dark:text-green-200 mb-2">
+          Most Productive Period
+        </h4>
+        {(() => {
+          const timeData = processTimeData();
+          if (timeData.length === 0) {
+            return <p>No data available</p>;
+          }
+          const peakProductivity = timeData.reduce((max, item) => 
+            (item.tasks / item.hoursWorked) > (max.tasks / max.hoursWorked) ? item : max, timeData[0]
+          );
+          return (
+            <div className="space-y-2">
+              <p className="text-lg font-bold text-green-800 dark:text-green-100">
+                {peakProductivity.timeSlot}
+              </p>
+              <p className="text-sm text-green-600 dark:text-green-300">
+                {(peakProductivity.tasks / peakProductivity.hoursWorked).toFixed(1)} tasks/hour
+              </p>
+            </div>
+          );
+        })()}
+      </div>
+    </div>
 
-                    <div className="p-4 rounded-lg bg-purple-50 dark:bg-gray-700">
-                      <h4 className="text-sm font-medium text-purple-900 dark:text-purple-200 mb-2">
-                        Recommendations
-                      </h4>
-                      <ul className="space-y-2 text-sm text-purple-800 dark:text-purple-100">
-                        {(() => {
-                          const metrics = calculateSummaryMetrics();
-                          const recommendations = [];
-                          
-                          if (metrics.avgEfficiency < 70) {
-                            recommendations.push(
-                              "Consider implementing the Pomodoro Technique to improve focus and efficiency"
-                            );
-                          }
-                          
-                          if (metrics.avgTasksPerHour < 2) {
-                            recommendations.push(
-                              "Try breaking down tasks into smaller, more manageable chunks"
-                            );
-                          }
-                          
-                          if (metrics.avgSessionLength > 2) {
-                            recommendations.push(
-                              "Consider taking more frequent breaks to maintain high efficiency"
-                            );
-                          }
-                          
-                          return recommendations.map((rec, index) => (
-                            <li key={index} className="flex items-start space-x-2">
-                              <span className="mt-1">•</span>
-                              <span>{rec}</span>
-                            </li>
-                          ));
-                        })()}
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
+    <div className="p-4 rounded-lg bg-purple-50 dark:bg-gray-900">
+      <h4 className="text-sm font-medium text-purple-900 dark:text-purple-200 mb-2">
+        Recommendations
+      </h4>
+      <ul className="space-y-2 text-sm text-purple-800 dark:text-purple-100">
+        {(() => {
+          const metrics = calculateSummaryMetrics();
+          const recommendations = [];
+
+          if (metrics.avgEfficiency < 70) {
+            recommendations.push(
+              "Consider implementing the Pomodoro Technique to improve focus and efficiency"
+            );
+          }
+
+          if (metrics.avgTasksPerHour < 2) {
+            recommendations.push(
+              "Try breaking down tasks into smaller, more manageable chunks"
+            );
+          }
+
+          if (metrics.avgSessionLength > 2) {
+            recommendations.push(
+              "Consider taking more frequent breaks to maintain high efficiency"
+            );
+          }
+
+          return recommendations.map((rec, index) => (
+            <li key={index} className="flex items-start space-x-2">
+              <span className="mt-1">•</span>
+              <span>{rec}</span>
+            </li>
+          ));
+        })()}
+      </ul>
+    </div>
+  </div>
+</CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="time" className="space-y-4">
-              <Card className="dark:bg-gray-800">
+              <Card className="dark:bg-black">
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold dark:text-white">
                     Time Distribution Analysis
@@ -505,7 +530,7 @@ const DeepWorkDashboard = () => {
                 </CardContent>
               </Card>
 
-              <Card className="dark:bg-gray-800">
+              <Card className="dark:bg-black">
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold dark:text-white">
                     Time Utilization Breakdown
@@ -521,7 +546,7 @@ const DeepWorkDashboard = () => {
                             {timeSlot.hoursWorked} hours
                           </span>
                         </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                        <div className="w-full bg-gray-200 dark:bg-gray-900 rounded-full h-2.5">
                           <div
                             className="bg-blue-600 h-2.5 rounded-full"
                             style={{
@@ -537,7 +562,7 @@ const DeepWorkDashboard = () => {
             </TabsContent>
 
             <TabsContent value="productivity" className="space-y-4">
-              <Card className="dark:bg-gray-800">
+              <Card className="dark:bg-black">
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold dark:text-white">
                     Tasks and Sessions Distribution
@@ -549,7 +574,7 @@ const DeepWorkDashboard = () => {
               </Card>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="dark:bg-gray-800">
+                <Card className="dark:bg-black">
                   <CardHeader>
                     <CardTitle className="text-lg font-semibold dark:text-white">
                       Task Completion Rates
@@ -569,7 +594,7 @@ const DeepWorkDashboard = () => {
                                 {completionRate} tasks/session
                               </span>
                             </div>
-                            <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+                            <div className="w-full h-2 bg-gray-200 dark:bg-gray-900 rounded-full">
                               <div
                                 className="h-2 bg-green-500 rounded-full"
                                 style={{
@@ -584,7 +609,7 @@ const DeepWorkDashboard = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="dark:bg-gray-800">
+                <Card className="dark:bg-black">
                   <CardHeader>
                     <CardTitle className="text-lg font-semibold dark:text-white">
                       Session Statistics
@@ -606,7 +631,7 @@ const DeepWorkDashboard = () => {
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+                            <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-900 rounded-full">
                               <div
                                 className="h-2 bg-purple-500 rounded-full"
                                 style={{
@@ -627,7 +652,7 @@ const DeepWorkDashboard = () => {
             </TabsContent>
 
             <TabsContent value="efficiency" className="space-y-4">
-              <Card className="dark:bg-gray-800">
+              <Card className="dark:bg-black">
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold dark:text-white">
                     Efficiency Distribution
@@ -638,7 +663,7 @@ const DeepWorkDashboard = () => {
                 </CardContent>
               </Card>
 
-              <Card className="dark:bg-gray-800">
+              <Card className="bg-gray-900">
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold dark:text-white">
                     Efficiency Trends and Analysis
@@ -658,7 +683,7 @@ const DeepWorkDashboard = () => {
                               {timeSlot.efficiency}% efficient
                             </span>
                           </div>
-                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                          <div className="w-full bg-gray-200 dark:bg-black rounded-full h-2.5">
                             <div
                               className="bg-green-500 h-2.5 rounded-full"
                               style={{ width: `${timeSlot.efficiency}%` }}
@@ -675,7 +700,7 @@ const DeepWorkDashboard = () => {
             </TabsContent>
 
             <TabsContent value="insights" className="space-y-4">
-              <Card className="dark:bg-gray-800">
+              <Card className="dark:bg-gray-900">
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold dark:text-white">
                     Key Insights and Patterns
@@ -742,7 +767,7 @@ const DeepWorkDashboard = () => {
                       });
 
                       return insights.map((insight, index) => (
-                        <div key={index} className="flex items-start space-x-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
+                        <div key={index} className="flex items-start space-x-4 p-4 rounded-lg bg-teal-200 dark:bg-black">
                           <div className={`mt-1 ${insight.color}`}>
                             <insight.icon className="w-5 h-5" />
                           </div>
@@ -762,7 +787,7 @@ const DeepWorkDashboard = () => {
               </Card>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="dark:bg-gray-800">
+                <Card className="dark:bg-black">
                   <CardHeader>
                     <CardTitle className="text-lg font-semibold dark:text-white">
                       Recommendations
@@ -815,7 +840,7 @@ const DeepWorkDashboard = () => {
                         }
 
                         return recommendations.map((rec, index) => (
-                          <div key={index} className="flex items-start space-x-3 p-3 rounded-lg bg-blue-50 dark:bg-gray-700">
+                          <div key={index} className="flex items-start space-x-3 p-3 rounded-lg bg-blue-50 dark:bg-gray-900">
                             <rec.icon className="w-5 h-5 mt-1 text-blue-500" />
                             <div>
                               <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200">
@@ -832,7 +857,7 @@ const DeepWorkDashboard = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="dark:bg-gray-800">
+                <Card className="dark:bg-black">
                   <CardHeader>
                     <CardTitle className="text-lg font-semibold dark:text-white">
                       Performance Summary
@@ -870,7 +895,7 @@ const DeepWorkDashboard = () => {
                                     {(metrics.totalHours / previousDays).toFixed(1)} hrs/day
                                   </span>
                                 </div>
-                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div className="w-full bg-gray-200 dark:bg-gray-900 rounded-full h-2">
                                   <div
                                     className="bg-blue-600 h-2 rounded-full"
                                     style={{
@@ -887,7 +912,7 @@ const DeepWorkDashboard = () => {
                                     {metrics.avgTasksPerHour.toFixed(1)} tasks/hr
                                   </span>
                                 </div>
-                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div className="w-full bg-gray-200 dark:bg-gray-900 rounded-full h-2">
                                   <div
                                     className="bg-green-500 h-2 rounded-full"
                                     style={{
@@ -904,7 +929,7 @@ const DeepWorkDashboard = () => {
                                     {metrics.avgEfficiency.toFixed(1)}%
                                   </span>
                                 </div>
-                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div className="w-full bg-gray-200 dark:bg-gray-900 rounded-full h-2">
                                   <div
                                     className="bg-purple-500 h-2 rounded-full"
                                     style={{ width: `${metrics.avgEfficiency}%` }}

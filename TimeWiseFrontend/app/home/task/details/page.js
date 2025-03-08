@@ -17,6 +17,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -45,12 +46,16 @@ import {
   Trash2,
   Users,
   X,
+  Info,
   Edit,
   Save,
   RefreshCcw,
   ListTodo,
+  Mail,
   History,
   Target,
+  Loader2,
+  Trash,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -63,9 +68,11 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import AnalyzeDataButton from '@/components/AnalyzeDataButton';
 
 const TaskPage = ({ taskId }) => {
-  const [task, setTask] = useState([]); // changed from 'task' to 'tasks'
+  const [task, setTask] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [updatingTodo, setUpdatingTodo] = useState(false);
@@ -74,8 +81,15 @@ const TaskPage = ({ taskId }) => {
   const [newNote, setNewNote] = useState("");
   const router = useRouter();
   const [error, setError] = useState(null);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+   const [showInviteDialog, setShowInviteDialog] = useState(false);
+    const [inviteUserName, setInviteUserName] = useState('');
 
-  // Form state
+   const [actionLoading,setActionLoading]= useState(false);
+  
+  
+  
+
   const [editedTask, setEditedTask] = useState({
     taskName: "",
     taskDescription: "",
@@ -86,16 +100,34 @@ const TaskPage = ({ taskId }) => {
     taskCurrentProgress: 0,
     previousTaskName: "",
   });
+  
 
   useEffect(() => {
     const fetchTask = async () => {
       try {
-        const taskName = localStorage.getItem("TimeWiseSelectedTaskName");
-        const taskOwner = localStorage.getItem("TimeWiseSelectedTaskOwner");
-
-        if (!taskName || !taskOwner) {
-          console.error("No task details found in local storage.");
-          setLoading(false);
+        const taskDataString = localStorage.getItem("TimeWiseTask");
+  
+       
+        if (!taskDataString) {
+          router.push("/home");
+          return; 
+        }
+      
+        const taskData = JSON.parse(taskDataString);
+        
+        
+        if (!taskData || typeof taskData !== "object") {
+          router.push("/home");
+          return;
+        }
+      
+        
+        const taskName = taskData.taskName ?? undefined;
+        const taskOwner = taskData.taskOwner ?? undefined;
+      
+        
+        if (taskName === undefined || taskOwner === undefined) {
+          router.push("/home");
           return;
         }
 
@@ -254,6 +286,105 @@ const TaskPage = ({ taskId }) => {
       }
     }
   };
+  const handleDeleteTodo = async (todo) => {
+    if (!todo.description.trim()) return;
+
+    try {
+      const todoData = {
+        taskName: task.taskName,
+        taskOwner: task.taskOwner,
+        updatedTaskTodoStatus: todo,
+      };
+
+      const response = await fetch("/api/tasks/todo/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(todoData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        const errorMessage =
+          errorData.error || errorData.message || "Failed to delete todo item";
+        throw new Error(errorMessage);
+      }
+
+      const updatedTask = await response.json();
+      setTask(updatedTask);
+      setNewTodo("");
+    } catch (error) {
+      console.error("Error deleting todo:", error);
+      setError({
+        message:
+          error.message ||
+          "An unexpected error occurred while deleting your todo item.",
+        actionRequired:
+          "Please try again or contact support if the problem persists.",
+      });
+
+      toast.error(`Failed to delete todo: ${error.message}`, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+
+      // Log to monitoring service (if available)
+      if (typeof errorLoggingService !== "undefined") {
+        errorLoggingService.logError("todo_creation_failure", error);
+      }
+    }
+  };
+  const handleDeleteTask = async () => {
+    
+
+    try {
+     
+
+      const response = await fetch(`/api/tasks/delete?taskName=${encodeURIComponent(task.taskName)}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+       
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        const errorMessage =
+          errorData.error || errorData.message || "Failed to delete task";
+        throw new Error(errorMessage);
+      }
+      localStorage.removeItem("TimeWiseTask");
+      const text = await response.text();
+      
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      setError({
+        message:
+          error.message ||
+          "An unexpected error occurred while deleting your task.",
+        actionRequired:
+          "Please try again or contact support if the problem persists.",
+      });
+
+      toast.error(`Failed to delete task: ${error.message}`, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+
+      // Log to monitoring service (if available)
+      if (typeof errorLoggingService !== "undefined") {
+        errorLoggingService.logError("todo_creation_failure", error);
+      }
+    }
+  };
   const handleUpdateTaskTodoStatus = async (todo) => {
     if (updatingTodo) return;
     setUpdatingTodo(true);
@@ -318,11 +449,184 @@ const TaskPage = ({ taskId }) => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <h1 className="text-2xl font-bold mb-4">No tasks found</h1>
-        <Button onClick={() => router.push("/tasks")}>Return to Tasks</Button>
+        <Button onClick={() => router.push("/home/tasks")}>Return to Tasks</Button>
       </div>
     );
   }
 
+  // Handle inviting a member
+const handleInviteMember = async (userName) => {
+  setInviteUserName(userName);
+   
+  setActionLoading(true);
+  
+  try {
+    const response = await fetch(`/api/tasks/invite?taskName=${encodeURIComponent(task.taskName)}&recipient=${encodeURIComponent(userName)}`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to send invitation');
+    }
+
+    // Update local state
+    const updatedTask = await response.json();
+    
+    setTask(updatedTask);
+    setInviteUserName('');
+    setShowInviteDialog(false);
+    
+    toast({
+      title: "Invitation sent",
+      description: `An invitation has been sent to ${userName}.`,
+    });
+  } catch (err) {
+    console.error('Error sending invitation:', err);
+    toast({
+      title: "Error",
+      description: "Failed to send invitation. Please try again.",
+      variant: "destructive"
+    });
+  } finally {
+    setActionLoading(false);
+  }
+};
+  
+  const userData = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('TimeWiseUserData') || '{}') : {};
+  const loggedInUserName = userData.userName;
+  const InviteMemberDialog = ({ open, onOpenChange, onInvite }) => {
+    const [userName, setUserName] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [suggestions, setSuggestions] = useState([]);
+    const [isInputFocused, setIsInputFocused] = useState(false);
+  
+    useEffect(() => {
+      try {
+        const userData = JSON.parse(localStorage.getItem('TimeWiseUserData'));
+        if (userData && userData.usersFollowing) {
+          console.log(userData);
+          setSuggestions(userData.usersFollowing);
+        } else {
+          setSuggestions([]);
+        }
+      } catch (error) {
+        console.error('Error parsing userData from localStorage:', error);
+        setSuggestions([]);
+      }
+    }, []);
+  
+    const handleInvite = async () => {
+      if (!userName.trim()) return;
+  
+      setIsSubmitting(true);
+      try {
+        await onInvite(userName);
+        setUserName('');
+        onOpenChange(false);
+      } catch (error) {
+        console.error('Error inviting member:', error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+  
+    const handleSuggestionClick = (suggestion) => {
+      setUserName(suggestion);
+      setIsInputFocused(false);
+    };
+  
+    const handleInputChange = (e) => {
+      setUserName(e.target.value);
+    };
+  
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite Others To Join Task</DialogTitle>
+            <DialogDescription>
+              Send an invitation to join your task
+            </DialogDescription>
+          </DialogHeader>
+  
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">User Name</label>
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Enter the invitee's TimeWise user name"
+                  value={userName}
+                  onChange={handleInputChange}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
+                />
+  
+                {isInputFocused && suggestions.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full rounded-md bg-gray-900 shadow-lg border border-gray-600 max-h-60 overflow-auto">
+                    <ul className="py-1 text-sm">
+                      {suggestions
+                        .filter((suggestion) =>
+                          suggestion
+                            .toLowerCase()
+                            .includes(userName.toLowerCase())
+                        )
+                        .map((suggestion) => (
+                          <li
+                            key={suggestion}
+                            className="cursor-pointer select-none py-2 px-4 hover:bg-gray-700"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleSuggestionClick(suggestion);
+                            }}
+                          >
+                            {suggestion}
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+  
+            <Alert variant="info" className="text-sm">
+              <Info className="h-4 w-4" />
+              <AlertTitle>Member will receive an email invitation</AlertTitle>
+              <AlertDescription>
+                They'll need to accept the invitation to join your team.
+              </AlertDescription>
+            </Alert>
+          </div>
+  
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleInvite}
+              disabled={isSubmitting || !userName.trim()}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Send Invitation
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
   return (
     <>
       <div className="container mx-auto p-6 space-y-6 dark:bg-gray-800 min-h-screen">
@@ -332,10 +636,69 @@ const TaskPage = ({ taskId }) => {
               {task.taskName}
             </h1>
             <p className="text-gray-500 dark:text-gray-400">
-              Created by {task.taskOwner} on{" "}
-              {format(new Date(task.taskCreationDate), "PPP")}
-            </p>
+    Created by {task.taskOwner} on{" "}
+    {task.taskCreationDate
+        ? format(new Date(task.taskCreationDate), "PPP")
+        : "Unknown Date"}
+</p>
           </div>
+          <div className="flex space-x-2">
+  <AnalyzeDataButton data={task} buttonText="Analyze Task Data" />
+  {(() => {
+    const userData = localStorage.getItem("TimeWiseUserData");
+    if (userData) {
+      const parsedUserData = JSON.parse(userData);
+      const isTaskOwner = task.taskOwner === parsedUserData.userName;
+      if (isTaskOwner) {
+        return (
+          <Dialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
+            <DialogTrigger asChild>
+              <Button variant="destructive">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Task
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Task</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete this task? This action
+                  cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setOpenDeleteDialog(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={async () => {
+                    try {
+                      await handleDeleteTask();
+                      setOpenDeleteDialog(false);
+                      router.push("/home");
+                    } catch (error) {
+                      console.error("Error deleting task:", error);
+                    
+                    }
+                  }}
+                >
+                  Delete
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        );
+      }
+    }
+    return null; 
+  })()}
+</div>
           {task.taskOwner ===
             JSON.parse(localStorage.getItem("TimeWiseUserData")).userName && (
             <div className="flex space-x-2 dark:bg-gray-800">
@@ -355,7 +718,7 @@ const TaskPage = ({ taskId }) => {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              {editMode && (
+              {editMode &&(
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -385,19 +748,14 @@ const TaskPage = ({ taskId }) => {
                 <div className="space-y-4">
                   {editMode ? (
                     <>
-                      <div className="space-y-2">
-                        <Label htmlFor="taskName">Task Name</Label>
-                        <Input
-                          id="taskName"
-                          value={editedTask.taskName}
-                          onChange={(e) =>
-                            setEditedTask({
-                              ...editedTask,
-                              taskName: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
+                    <div className="space-y-2">
+  <Label htmlFor="taskName">Task Name</Label>
+  <Input
+    id="taskName"
+    value={editedTask.taskName}
+    disabled 
+  />
+</div>
                       <div className="space-y-2">
                         <Label htmlFor="taskGoal">Task Goal</Label>
                         <Input
@@ -422,7 +780,7 @@ const TaskPage = ({ taskId }) => {
                               taskDescription: e.target.value,
                             })
                           }
-                          className="resize-vertical  dark:bg-black" // Changed to bg-black dark:bg-black
+                          className="resize-vertical  dark:bg-black" 
                         />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -568,21 +926,21 @@ const TaskPage = ({ taskId }) => {
                     </>
                   ) : (
                     <>
-  {/* Task Metadata - Priority, Category, Visibility */}
+
   <div className="flex items-center space-x-2 mb-3">
     <Badge className={`px-2 py-0.5 rounded text-xs font-medium ${getPriorityColor(task.taskPriority)}`}>
       {task.taskPriority} Priority
     </Badge>
     <Badge variant="outline" className="flex items-center gap-2 px-2 py-0.5 rounded text-xs">
       <Folder className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-      <span className="text-gray-700 dark:text-gray-300">{task.taskCategory}</span>
+      <span className="text-gray-700 dark:text-gray-300">{task.taskCategory} Category</span>
     </Badge>
     <Badge variant="secondary" className="px-2 py-0.5 rounded text-xs">
-      {task.taskVisibilityStatus}
+      {task.taskVisibilityStatus} Visibility
     </Badge>
   </div>
 
-  {/* Goal Section */}
+  
   <p className="flex items-center text-gray-800 dark:text-gray-300 font-medium mb-1">
     <Target className="w-5 h-5 text-green-600 dark:text-green-400 mr-2" />
     <span className="text-indigo-700 dark:text-indigo-300">Goal:</span> &nbsp;{task.taskGoal}
@@ -603,13 +961,14 @@ const TaskPage = ({ taskId }) => {
 
             <Tabs defaultValue="comments" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="comments">
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Comments
-                </TabsTrigger>
+                
                 <TabsTrigger value="todos">
                   <ListTodo className="w-4 h-4 mr-2" />
                   Todos
+                </TabsTrigger>
+                <TabsTrigger value="comments">
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Comments
                 </TabsTrigger>
                 <TabsTrigger value="notes">
                   <FileText className="w-4 h-4 mr-2" />
@@ -621,7 +980,68 @@ const TaskPage = ({ taskId }) => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="comments">
+              
+
+              <TabsContent value="todos">
+  <Card>
+    <CardHeader>
+      <CardTitle>Todo List</CardTitle>
+      <CardDescription>Track subtasks and todos</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="space-y-4">
+        <div className="flex space-x-2">
+          <Input
+            placeholder="Add a todo..."
+            value={newTodo}
+            onChange={(e) => setNewTodo(e.target.value)}
+          />
+          <Button onClick={handleAddTodo}>Add</Button>
+        </div>
+        <ScrollArea className="h-[400px] pr-4">
+  {task.taskTodos &&
+    task.taskTodos.map((todo) => (
+      <div
+        key={todo.description}
+        className="flex items-center justify-between py-2"
+      >
+        <div className="flex items-center space-x-2">
+          <span className="text-sm">{todo.description}</span>
+          <span className="text-xs text-gray-500">
+            {format(new Date(todo.timestamp), "PPp")}
+          </span>
+        </div>
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleUpdateTaskTodoStatus(todo)}
+            disabled={updatingTodo}
+          >
+            {todo.status === "Complete" ? (
+              <Check className="h-4 w-4 text-green-500" />
+            ) : (
+              <Circle className="h-4 w-4 text-gray-400" />
+            )}
+          </Button>
+          {loggedInUserName === task.taskOwner && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleDeleteTodo(todo)}
+            >
+              <Trash className="h-4 w-4 text-red-500" />
+            </Button>
+          )}
+        </div>
+      </div>
+    ))}
+</ScrollArea>
+      </div>
+    </CardContent>
+  </Card>
+</TabsContent>
+<TabsContent value="comments">
                 <Card>
                   <CardHeader>
                     <CardTitle>Comments</CardTitle>
@@ -670,57 +1090,6 @@ const TaskPage = ({ taskId }) => {
                   </CardContent>
                 </Card>
               </TabsContent>
-
-              <TabsContent value="todos">
-  <Card>
-    <CardHeader>
-      <CardTitle>Todo List</CardTitle>
-      <CardDescription>Track subtasks and todos</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <div className="space-y-4">
-        <div className="flex space-x-2">
-          <Input
-            placeholder="Add a todo..."
-            value={newTodo}
-            onChange={(e) => setNewTodo(e.target.value)}
-          />
-          <Button onClick={handleAddTodo}>Add</Button>
-        </div>
-        <ScrollArea className="h-[400px] pr-4">
-          {task.taskTodos &&
-            task.taskTodos.map((todo) => (
-              <div
-                key={todo.description}
-                className="flex items-center justify-between py-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm">
-                    {todo.description}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {format(new Date(todo.timestamp), "PPp")}
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleUpdateTaskTodoStatus(todo)}
-                  disabled={updatingTodo}
-                >
-                  {todo.status === "Complete" ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Circle className="h-4 w-4 text-gray-400" />
-                  )}
-                </Button>
-              </div>
-            ))}
-        </ScrollArea>
-      </div>
-    </CardContent>
-  </Card>
-</TabsContent>
 
               <TabsContent value="notes">
                 <Card>
@@ -891,9 +1260,9 @@ const TaskPage = ({ taskId }) => {
                     <h4 className="text-sm font-medium mb-2">Owner</h4>
                     <div className="flex items-center space-x-2">
                       <Avatar>
-                        <AvatarFallback>
-                          {task.taskOwner.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
+                      <AvatarFallback>
+    {task.taskOwner ? task.taskOwner.substring(0, 2).toUpperCase() : "UD"}
+</AvatarFallback>
                       </Avatar>
                       <span>{task.taskOwner}</span>
                     </div>
@@ -918,19 +1287,21 @@ const TaskPage = ({ taskId }) => {
                     </div>
                   </div>
 
-                  {editMode && (
+                  {task.taskOwner ===
+                    JSON.parse(localStorage.getItem("TimeWiseUserData")).userName && (
                     <div className="pt-4">
-                      <Button className="w-full" variant="outline">
+                      <Button className="w-full" variant="outline" onClick={() => setShowInviteDialog(true)}>
                         <Users className="w-4 h-4 mr-2" />
-                        Manage Team
+                        Invite Members
                       </Button>
                     </div>
-                  )}
+                    )}
+                 
                 </div>
               </CardContent>
             </Card>
-
-            <Card>
+            
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Settings</CardTitle>
               </CardHeader>
@@ -1001,8 +1372,13 @@ const TaskPage = ({ taskId }) => {
                   </Dialog>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
+          <InviteMemberDialog
+          open={showInviteDialog}
+          onOpenChange={setShowInviteDialog}
+          onInvite={handleInviteMember}
+        />
         </div>
       </div>
     </>

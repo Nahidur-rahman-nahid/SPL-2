@@ -4,12 +4,13 @@ import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ClipboardList,
-  TrendingUp,
-  History,
-  Play,
+  ListChecks,
+  Map,
+  Activity,
+  BarChart,
+  PlayCircle,
   Users,
-  Bell,
+  MessageSquare,
   PieChart,
   ChevronRight,
   ChevronLeft,
@@ -25,55 +26,14 @@ import { cn } from "@/components/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const menuItems = [
-  {
-    id: "tasks",
-    label: "My Tasks",
-    icon: ClipboardList,
-    route: "/home/task/mytasks",
-    color: "text-green-500",
-  },
-  {
-    id: "progress",
-    label: "My Progress",
-    icon: TrendingUp,
-    route: "/progress",
-    color: "text-purple-500",
-  },
-  {
-    id: "performance",
-    label: "Performance History",
-    icon: History,
-    route: "/performance",
-    color: "text-orange-500",
-  },
-  {
-    id: "create-session",
-    label: "Create Session",
-    icon: Play,
-    route: "/create-session",
-    color: "text-teal-500",
-  },
-  {
-    id: "teams",
-    label: "My Teams",
-    icon: Users,
-    route: "/teams",
-    color: "text-indigo-500",
-  },
-  {
-    id: "notifications",
-    label: "Notifications",
-    icon: Bell,
-    route: "/notifications",
-    color: "text-red-500",
-  },
-  {
-    id: "statistics",
-    label: "Statistics",
-    icon: PieChart,
-    route: "/statistics",
-    color: "text-pink-500",
-  },
+  { id: "task", label: "Create Task", icon: ListChecks, route: "/home/task/create", color: "text-blue-500" },
+  { id: "roadmap", label: "Generate Roadmap", icon: Map, route: "/home/roadmap/generate", color: "text-green-500" },
+  { id: "progress", label: "My Progress", icon: Activity, route: "/home/progress-report", color: "text-purple-500" },
+  { id: "performance", label: "Performance Report", icon: BarChart, route: "/home/performance-report", color: "text-orange-500" },
+  { id: "create-session", label: "Create Session", icon: PlayCircle, route: "/home/session", color: "text-teal-500" },
+  { id: "teams", label: "My Teams", icon: Users, route: "/home/team", color: "text-indigo-500" },
+  { id: "feedbacks", label: "Feedbacks", icon: MessageSquare, route: "/home/feedback", color: "text-red-500" },
+  { id: "analytics", label: "Deep Work Analytics", icon: PieChart, route: "/home/deep-work-analytics", color: "text-pink-500" },
 ];
 
 export default function SidebarLeft() {

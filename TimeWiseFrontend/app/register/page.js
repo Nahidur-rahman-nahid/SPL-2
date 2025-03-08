@@ -142,7 +142,8 @@ export default function RegisterPage() {
           password: form.getValues("password"),
           shortBiodata: form.getValues("biodata"),
           role: form.getValues("role"),
-          userStatus: "active",
+          userStatus: "Active",
+          accountVisibility: "Public",
         }),
       });
 
@@ -180,7 +181,8 @@ export default function RegisterPage() {
             password: data.password,
             shortBiodata: data.biodata,
             role: data.role,
-            userStatus: "active",
+            userStatus: "Active",
+            accountVisibility: "Public",
           }),
         }
       );
@@ -352,16 +354,32 @@ export default function RegisterPage() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="student">
-                                    Student
-                                  </SelectItem>
-                                  <SelectItem value="professional">
-                                    Professional
-                                  </SelectItem>
-                                  <SelectItem value="teacher">
-                                    Teacher
-                                  </SelectItem>
-                                </SelectContent>
+  <SelectItem value="Admin">Admin</SelectItem>
+  <SelectItem value="User">User</SelectItem>
+  <SelectItem value="Manager">Manager</SelectItem>
+  <SelectItem value="Developer">Developer</SelectItem>
+  <SelectItem value="Guest">Guest</SelectItem>
+  <SelectItem value="Moderator">Moderator</SelectItem>
+  <SelectItem value="Support">Support</SelectItem>
+  <SelectItem value="Analyst">Analyst</SelectItem>
+  <SelectItem value="Designer">Designer</SelectItem>
+  <SelectItem value="Tester">Tester</SelectItem>
+  <SelectItem value="Sales">Sales</SelectItem>
+  <SelectItem value="Marketing">Marketing</SelectItem>
+  <SelectItem value="Finance">Finance</SelectItem>
+  <SelectItem value="Hr">Hr</SelectItem>
+  <SelectItem value="Operations">Operations</SelectItem>
+  <SelectItem value="Teacher">Teacher</SelectItem>
+  <SelectItem value="Doctor">Doctor</SelectItem>
+  <SelectItem value="Engineer">Engineer</SelectItem>
+  <SelectItem value="Scientist">Scientist</SelectItem>
+  <SelectItem value="Artist">Artist</SelectItem>
+  <SelectItem value="Writer">Writer</SelectItem>
+  <SelectItem value="Consultant">Consultant</SelectItem>
+  <SelectItem value="Researcher">Researcher</SelectItem>
+  <SelectItem value="Advisor">Advisor</SelectItem>
+  <SelectItem value="Other">Other</SelectItem>
+</SelectContent>
                               </Select>
                               <FormMessage />
                             </FormItem>

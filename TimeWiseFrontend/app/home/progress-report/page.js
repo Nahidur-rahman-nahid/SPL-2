@@ -58,6 +58,8 @@ import {
   Cell,
 } from "recharts";
 import { format } from "date-fns";
+import { progress } from "framer-motion";
+import AnalyzeDataButton from '@/components/AnalyzeDataButton';
 
 // Custom hook for search and filtering
 const useFilteredData = (data, searchTerm, filters) => {
@@ -896,6 +898,10 @@ export default function ProgressReportPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Progress Report Dashboard</h1>
+           <AnalyzeDataButton
+                data={currentReport}
+                buttonText="Analyze Progress Report"
+              />
         </div>
 
         <SearchAndFilter
