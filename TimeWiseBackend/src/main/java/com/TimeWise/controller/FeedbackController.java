@@ -1,6 +1,7 @@
 package com.TimeWise.controller;
 
 
+import com.TimeWise.model.Feedback;
 import com.TimeWise.service.FeedbackService;
 import com.TimeWise.utils.FeedbackBody;
 import com.TimeWise.utils.MessageBody;
@@ -24,7 +25,7 @@ public class FeedbackController {
         return feedbackService.sendFeedback(feedbackBody);
     }
     @DeleteMapping("/remove")
-    public ResponseEntity<?> remove(@RequestParam ObjectId feedbackId) {
-        return feedbackService.removeFeedback(feedbackId);
+    public ResponseEntity<?> remove(@RequestParam Feedback feedback) {
+        return feedbackService.removeFeedback(feedback);
     }
 }

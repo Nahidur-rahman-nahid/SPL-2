@@ -559,7 +559,7 @@ public static ResponseEntity<?> handleTaskParticipatingInvitationResponse(String
         teamRepository.save(team);
         createTeamNotification(userName,teamName,"NEW_TEAM_TASK_ADDED",message);
 
-        return ResponseEntity.ok(task);
+        return ResponseEntity.ok(team);
 
     }
 

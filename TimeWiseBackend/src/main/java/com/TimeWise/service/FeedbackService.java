@@ -39,29 +39,34 @@ public class FeedbackService {
     }
 
 
-    public ResponseEntity<?> removeFeedback(ObjectId feedbackId) {
+    public ResponseEntity<?> removeFeedback(Feedback feedback) {
         String currentUser = UserCredentials.getCurrentUsername();
-        Feedback feedback = feedbackRepository.findByFeedbackId(feedbackId);
+        ObjectId feedbackId = feedback.getFeedbackId(); // Get feedbackId from the received object.
 
-        if (feedback == null) {
+        if (feedbackId == null) {
+            return ResponseEntity.badRequest().body("Feedback ID is missing.");
+        }
+
+        Feedback existingFeedback = feedbackRepository.findByFeedbackId(feedbackId);
+
+        if (existingFeedback == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Invalid feedback ID.");
         }
 
-        if (feedback.getFeedbackSender() != null && feedback.getFeedbackSender().equals(currentUser)) {
-            feedback.setFeedbackSender(null);
-        } else if (feedback.getFeedbackRecipient() != null && feedback.getFeedbackRecipient().equals(currentUser)) {
-            feedback.setFeedbackRecipient(null);
+        if (existingFeedback.getFeedbackSender() != null && existingFeedback.getFeedbackSender().equals(currentUser)) {
+            existingFeedback.setFeedbackSender(null);
+        } else if (existingFeedback.getFeedbackRecipient() != null && existingFeedback.getFeedbackRecipient().equals(currentUser)) {
+            existingFeedback.setFeedbackRecipient(null);
         } else {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You are not the sender or recipient of this feedback.");
         }
 
-        if (feedback.getFeedbackRecipient() == null && feedback.getFeedbackSender() == null) {
-            feedbackRepository.delete(feedback);
+        if (existingFeedback.getFeedbackRecipient() == null && existingFeedback.getFeedbackSender() == null) {
+            feedbackRepository.delete(existingFeedback);
             return ResponseEntity.ok("Feedback deleted successfully.");
         } else {
-            feedbackRepository.save(feedback);
+            feedbackRepository.save(existingFeedback);
             return ResponseEntity.ok("Feedback sender/recipient removed successfully.");
         }
     }
-
 }

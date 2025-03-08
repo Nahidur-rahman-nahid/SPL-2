@@ -390,7 +390,7 @@ public class TaskService {
 
         Task task = taskOptional.get();
 
-        if (!task.getTaskOwner().equals(userName)) {
+        if (!task.getTaskParticipants().contains(userName)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -571,14 +571,27 @@ public class TaskService {
 
     public ResponseEntity<?> getTaskDetails(String taskName,String taskOwner) {
         String userName = UserCredentials.getCurrentUsername();
-        Task task = taskRepository.findByTaskNameAndTaskOwner(taskName,taskOwner);
-        if(task==null) {
+        Task task = taskRepository.findByTaskNameAndTaskOwner(taskName, taskOwner);
+
+        if (task == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Task not found");
         }
-        if(!task.getTaskParticipants().contains(userName)){
+
+        if (!task.getTaskParticipants().contains(userName)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Only task participants can get task details.");
         }
-        task.setTaskId(null);
+
+        // Filter taskNotes for the current user
+        TreeMap<String, List<Task.Note>> filteredNotes = new TreeMap<>();
+        if (task.getTaskNotes() != null) {
+            List<Task.Note> userNotes = task.getTaskNotes().get(userName);
+            if (userNotes != null) {
+                filteredNotes.put(userName, userNotes);
+            }
+        }
+
+        task.setTaskNotes(filteredNotes);
+
         return ResponseEntity.ok(task);
     }
 
