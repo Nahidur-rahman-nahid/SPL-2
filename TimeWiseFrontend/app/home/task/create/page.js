@@ -98,7 +98,7 @@ const CreateTaskForm = () => {
 
       const result = await response.json();
       console.log("Task created successfully:", result);
-      router.push("/home/task/mytasks");
+      router.push("/home");
     } catch (error) {
       console.error("Error submitting task:", error);
       setError("Failed to create task. Please try again.");
